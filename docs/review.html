@@ -91,7 +91,7 @@ const F=[
   f:"All price-history math (last/best/avg/highest + verdict) runs on unit price = total ÷ quantity. Line total is kept only for the Month tab.",v:"adopted"},
  {sev:"critical",cat:"Data model",t:"Item identity fragments across three names",
   s:'The parser emits "ALM FRSH MILK 2L", you once typed "milk", autocomplete missed it so you typed "Almarai Milk 2L". Three items, each with a sliver of history — every stat is computed over a fragment.',
-  f:'Normalized fuzzy lookup on entry + import, with an "is this <existing item>?" confirm before creating anything new, plus a lightweight merge action to fix fragmentation.',v:"adopted"},
+  f:'Normalized fuzzy lookup on entry + import, with an "is this the same item you already track?" confirm before creating anything new, plus a lightweight merge action to fix fragmentation.',v:"adopted"},
  {sev:"critical",cat:"Parser",t:"Re-importing the same receipt doubles the month",
   s:"You import the PDF, aren't sure it saved, open the email and import again. Every line inserts twice; month spend jumps and every item's average is skewed by phantom buys.",
   f:"Fingerprint each import (store + date + grand total / PDF hash). On a match, warn 'already imported' and require explicit confirm.",v:"adopted"},
