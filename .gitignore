@@ -1,0 +1,33 @@
+# === Privacy hard-block (never commit personal data) ===
+*.pdf
+receipts/
+*.receipt
+*.sqlite
+*.db
+data/
+exports/
+*.csv
+
+# === Secrets ===
+.env
+.env.*
+!.env.example
+
+# === Node / Next.js ===
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+npm-debug.log*
+
+# === OS / editor ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# === Scratch ===
+tmp/
+scratch/
