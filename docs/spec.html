@@ -4,127 +4,130 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Shelfie — Design Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('shelfie-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<link rel="stylesheet" href="shelfie.css" />
 <style>
-  :root{--green:#12b76a;--green-dark:#039855;--green-soft:#e7f7ef;--ink:#101828;--muted:#667085;--line:#eaecf0;--bg:#f7f9f8;--amber:#f79009;--red:#f04438}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg);color:var(--ink);line-height:1.6}
-  .wrap{max-width:760px;margin:0 auto;padding:34px 20px 80px}
-  .top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-  .top .cart{font-size:34px}
-  h1{font-size:32px;margin:0;letter-spacing:-.02em}
-  .tagline{color:var(--muted);margin:2px 0 22px;font-size:17px}
-  .nav{display:flex;gap:10px;margin-bottom:26px;flex-wrap:wrap}
-  .nav a{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 14px;text-decoration:none;color:var(--green-dark);font-weight:700;font-size:14px}
+  .wrap{max-width:780px;margin:0 auto;padding:52px 20px 80px}
+  .nav{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+  .nav a{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;text-decoration:none;color:var(--green-strong);font-weight:700;font-size:14px}
   .nav a.primary{background:var(--green);color:#fff;border-color:var(--green)}
-  h2{font-size:22px;margin:34px 0 6px;letter-spacing:-.01em;padding-top:10px;border-top:1px solid var(--line)}
-  h3{font-size:17px;margin:20px 0 4px}
+  h1{font-size:clamp(36px,7vw,56px);margin:6px 0 6px}
+  .tagline{color:var(--ink-soft);font-size:18px;margin:0 0 22px}
+  .lead{background:var(--green-soft);border:1px solid color-mix(in srgb,var(--green) 30%,var(--line));
+    border-radius:16px;padding:18px 22px;color:var(--green-strong);font-size:16.5px}
+  .lead b{color:var(--ink)}
+  h2{font-size:26px;margin:40px 0 6px}
+  h3{font-size:18px;margin:22px 0 4px;font-family:var(--font-body);font-weight:800}
   p{margin:8px 0}
-  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
-  ul{margin:8px 0;padding-left:22px}li{margin:4px 0}
-  code{background:#eef2f0;padding:2px 6px;border-radius:6px;font-size:14px}
-  .tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--green-soft);color:var(--green-dark);margin-right:6px}
-  .tag.cut{background:#fee4e2;color:#b42318}
-  .tag.amber{background:#fef0c7;color:#b54708}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:14px 0;box-shadow:var(--shadow-sm)}
+  ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--card-2);border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-family:var(--font-mono);font-size:13.5px}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--green-soft);color:var(--green-strong);margin:3px 4px 3px 0}
+  .tag.cut{background:var(--red-soft);color:var(--red)}
   table{width:100%;border-collapse:collapse;margin:12px 0;font-size:15px}
-  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-  .lead{background:var(--green-soft);border:1px solid #b7ead0;border-radius:14px;padding:16px 20px;color:#054f34}
-  .foot{margin-top:40px;color:var(--muted);font-size:13px;text-align:center}
+  th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--ink-faint);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
   .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:14px 0}
   @media(max-width:640px){.grid{grid-template-columns:1fr}}
-  .mini{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}
-  .mini .h{font-weight:800;margin-bottom:2px}.mini .m{color:var(--muted);font-size:14px}
+  .mini{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .mini .e{font-size:22px}.mini .h{font-weight:800;margin:4px 0 2px}.mini .m{color:var(--ink-soft);font-size:14px;line-height:1.45}
+  .hard{border-left:3px solid var(--green);background:var(--card-2);border-radius:0 10px 10px 0;padding:10px 14px;margin:10px 0;font-size:14.5px}
+  .hard b{color:var(--green-strong)}
+  .foot{margin-top:44px;color:var(--ink-faint);font-size:13px;text-align:center}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="top"><span class="cart">🛒</span><h1>Shelfie</h1></div>
-  <p class="tagline">A deliberately simple UAE grocery price + budget tracker. One person, one PIN, three tabs.</p>
-  <div class="nav">
-    <a class="primary" href="mockup.html">📱 Open the clickable mockup</a>
-    <a href="index.html">← Review home</a>
-    <a href="https://github.com/xCloudy75z/shelfie" target="_blank">GitHub repo ↗</a>
+  <button class="theme-toggle" aria-label="Toggle light/dark"><span class="moon">🌙</span><span class="sun">☀️</span></button>
+  <div class="wrap">
+    <div class="nav">
+      <a href="index.html">← Hub</a>
+      <a class="primary" href="mockup.html">📱 Open the mockup</a>
+      <a href="review.html">🛡️ Adversarial review</a>
+    </div>
+
+    <h1>Shelfie — Spec</h1>
+    <p class="tagline">A deliberately simple UAE grocery price + budget tracker. One person, one PIN, three tabs.</p>
+    <div class="lead"><b>The pitch:</b> Standing at the shelf — <em>is this price actually good, or have I paid less before?</em> Log purchases (or import the Carrefour PDF), know each item's price story, watch the month. Nothing else.</div>
+
+    <h2>1 · Three real moments</h2>
+    <div class="grid">
+      <div class="mini"><div class="e">🛒</div><div class="h">At the shelf</div><div class="m">Is this good, or have I paid less? → <b>Prices</b> tab.</div></div>
+      <div class="mini"><div class="e">🧾</div><div class="h">After shopping</div><div class="m">Log it fast → <b>Log</b> tab + PDF import.</div></div>
+      <div class="mini"><div class="e">📅</div><div class="h">End of month</div><div class="m">Over/under budget, where'd it go → <b>Month</b>.</div></div>
+    </div>
+
+    <h2>2 · The three tabs</h2>
+
+    <h3>Tab 1 — Log</h3>
+    <p><b>Fast logging is the headline.</b> Two ways in:</p>
+    <ul>
+      <li><b>Import receipt (PDF)</b> — upload the Carrefour PDF they email you. A free, on-device parser reads every line, then shows you a <b>review screen of draft rows</b> — never a silent insert. You glance, fix, bulk-set categories, and save the whole trip in one tap.</li>
+      <li><b>Quick manual entry</b> — a single forgotten item: Item (autocompletes &amp; matches your history), Price, Qty (default 1), Store (defaults <b>Carrefour</b>), Category (auto for known items), Date (today), optional "on offer".</li>
+    </ul>
+
+    <h3>Tab 2 — Prices <span class="tag">the payoff</span></h3>
+    <p>Search an item and see its price story — <b>Last paid · Best ever · Average · Highest</b> (with dates and store), a trend line, and recent buys. Then the shelf check: type the price in front of you and get a plain verdict — <em>Great price / Cheaper than usual / About the same / Pricier than usual</em>.</p>
+
+    <h3>Tab 3 — Month</h3>
+    <p>Spend this month vs. your budget with a green/amber/red pace, a category breakdown ("where it went"), recent purchases, and a set-budget button. Flip to past months.</p>
+
+    <p style="margin-top:16px"><span class="tag">🔒 PIN lock</span> A short PIN opens the app, remembered on your device — with brute-force protection (below).</p>
+
+    <h2>3 · Hardened by the review</h2>
+    <p>The <a href="review.html">adversarial review</a> found real correctness holes before any code. These fixes are now <b>part of the design</b> — and they keep the app simple, just correct:</p>
+
+    <div class="hard"><b>Unit price, always.</b> All price-history math compares <code>total ÷ quantity</code>, never the raw line total — so a 6-pack line never distorts a single-unit verdict. Weighed produce compares per-kg to per-kg.</div>
+    <div class="hard"><b>One item, one identity.</b> Manual and imported names run through a normalized fuzzy match with an "is this the same item?" confirm before a new item is created — plus a merge tool to fix any fragments. No silent junk items.</div>
+    <div class="hard"><b>Import is draft-first.</b> Parsed lines are self-checked against the receipt's grand total (±0.05). On any mismatch you land in an editable review screen — nothing saves until you confirm. Re-importing the same receipt is caught by a fingerprint and warns you.</div>
+    <div class="hard"><b>Honest verdicts.</b> Benchmarks use non-offer prices over a rolling window (so a one-off promo or a 2-year-old price can't poison "best ever"), and the verdict is suppressed until there are enough samples to judge.</div>
+    <div class="hard"><b>Real security.</b> PIN attempts are throttled server-side (lockout after repeated fails), sessions are httpOnly with a sane expiry + a manual "Lock", and your data is one tap to export (JSON/CSV) — never trapped, never a single point of loss.</div>
+    <div class="hard"><b>Right month, every time.</b> Purchases bucket by date in <b>Asia/Dubai</b>, so a late-night buy on the 31st never slips into the wrong month's budget.</div>
+
+    <h2>4 · The receipt parser</h2>
+    <div class="card">
+      <p>Your Carrefour PDFs are <b>text-based</b> (confirmed from a real sample), so a <b>free deterministic parser</b> reads them — <b>no AI, no per-scan cost, no external service</b>. Each line yields description, quantity, unit price, and line total; the grand total self-checks the parse.</p>
+      <p class="m" style="color:var(--ink-soft);font-size:14px">Layouts vary (VAT columns, bag fees, discount lines, weighed items, multi-page), so the parser is <b>hardened against real receipts</b> ("try to break it") and always routes through the review screen. If a receipt ever won't parse cleanly, you fall back to quick manual entry — nothing breaks.</p>
+    </div>
+
+    <h2>5 · Under the hood</h2>
+    <table>
+      <tr><th>Piece</th><th>Choice</th></tr>
+      <tr><td>Foundation</td><td>Standalone personal web app on Vercel — no portal SSO, no multi-user plumbing.</td></tr>
+      <tr><td>Stack</td><td>Next.js + TypeScript, server actions (no separate API layer), Tailwind.</td></tr>
+      <tr><td>Database</td><td>Postgres on Neon. <b>~6 tables</b>: Item, Category, Purchase, Budget, Settings, ReceiptImport (fingerprint + undo).</td></tr>
+      <tr><td>Price history</td><td>Computed live from purchases (unit price) — no cached stats table.</td></tr>
+      <tr><td>Login</td><td>PIN (hashed) + throttle + httpOnly session + Lock. No accounts system.</td></tr>
+      <tr><td>Offline</td><td>Light PWA; recently-viewed item stats cached client-side so the shelf check works on weak signal.</td></tr>
+      <tr><td>Money</td><td>Whole fils (no rounding drift), shown as AED. Dubai-time date buckets.</td></tr>
+      <tr><td>Your data</td><td>One-tap export (JSON/CSV). It's yours, always retrievable.</td></tr>
+    </table>
+
+    <h2>6 · Deliberately NOT built</h2>
+    <p>The current FilsWise carries all of this. Shelfie drops every bit:</p>
+    <p style="line-height:2.4">
+      <span class="tag cut">Portal SSO / multi-user</span><span class="tag cut">Offer-authenticity engine</span>
+      <span class="tag cut">Trips + merge/split</span><span class="tag cut">Tag system</span>
+      <span class="tag cut">Budget Coach</span><span class="tag cut">Investment insights</span>
+      <span class="tag cut">Timing "best day"</span><span class="tag cut">Ramadan engine</span>
+      <span class="tag cut">Alerts + SSE</span><span class="tag cut">Web-push</span>
+      <span class="tag cut">Barcode scanning</span><span class="tag cut">Watchlists</span><span class="tag cut">Excel reporting</span>
+    </p>
+    <p class="m" style="color:var(--ink-soft);font-size:14px">20 tables → ~6. · 37 API routes → none (server actions). · ~16 services → a handful.</p>
+
+    <h2>7 · How we build it</h2>
+    <ol>
+      <li><b>You approve</b> this spec + the mockup — in your browser.</li>
+      <li><b>Written plan</b> — a step-by-step implementation plan.</li>
+      <li><b>Build test-first</b> — parser and core flows, with tests, on <b>Opus</b>.</li>
+      <li><b>Try to break it</b> — hammer the parser with real receipts, fix what fails.</li>
+      <li><b>Deploy to Vercel</b> — you open the real app and confirm it works.</li>
+    </ol>
+
+    <p class="foot">Shelfie · design spec (hardened by adversarial review) · nothing built until you approve.<br>Mockups use fake sample groceries — never your real data.</p>
   </div>
-
-  <div class="lead">
-    <strong>The one-line pitch:</strong> Standing at the shelf — <em>is this price actually good, or have I paid less before?</em>
-    Log purchases (or import the Carrefour PDF), know each item's price story, and keep an eye on the month. Nothing else.
-  </div>
-
-  <h2>1 · Who &amp; why</h2>
-  <p>A personal tool for <strong>one owner</strong> (you), used in three real moments:</p>
-  <div class="grid">
-    <div class="mini"><div class="h">🛒 At the shelf</div><div class="m">Is this price good, or have I paid less? → the <strong>Prices</strong> tab.</div></div>
-    <div class="mini"><div class="h">🧾 After shopping</div><div class="m">Log what I bought — fast. → the <strong>Log</strong> tab + PDF import.</div></div>
-    <div class="mini"><div class="h">📅 End of month</div><div class="m">Over or under budget, where did it go? → the <strong>Month</strong> tab.</div></div>
-  </div>
-
-  <h2>2 · The whole app is 3 tabs</h2>
-
-  <h3>Tab 1 — Log</h3>
-  <p><strong>Fast logging is the headline.</strong> Two ways in:</p>
-  <ul>
-    <li><strong>Import receipt (PDF)</strong> — upload the Carrefour PDF they email you. A free, on-device parser extracts every item + price, you review the list (fix any oddity), and save the whole trip in one tap. Turns a 30-item monthly haul from 30 taps into one upload + a glance.</li>
-    <li><strong>Quick manual entry</strong> — for a single forgotten item: Item (autocompletes from your history), Price, Qty (default 1), Store (defaults <strong>Carrefour</strong>), Category (auto-fills for known items), Date (today), optional "on offer" toggle.</li>
-  </ul>
-
-  <h3>Tab 2 — Prices <span class="tag">the payoff</span></h3>
-  <p>Search an item and see its price story: <strong>Last paid · Best ever · Average · Highest</strong> (with dates), a small trend line, and recent buys. Plus the shelf check: type the price in front of you and get a plain verdict — <em>Great price / Cheaper than usual / About the same / Pricier than usual</em>.</p>
-
-  <h3>Tab 3 — Month</h3>
-  <p>Spend this month vs. your budget with a green/amber/red pace, a category breakdown ("where it went"), recent purchases, and a button to set the monthly budget. Flip back to past months.</p>
-
-  <p style="margin-top:16px"><span class="tag">🔒 PIN lock</span> A single 4-digit PIN opens the app, remembered on your device so you rarely re-type it.</p>
-
-  <h2>3 · The receipt parser (the one clever bit)</h2>
-  <div class="card">
-    <p>Your Carrefour PDFs are <strong>text-based</strong> (confirmed from a real sample), so we read them with a <strong>free, deterministic parser</strong> — <strong>no AI, no per-scan cost, no external service</strong>. Each line gives us item description, quantity, unit price, and line total, and the receipt's grand total lets the app <strong>self-check</strong> the parse ("total matches ✓").</p>
-    <p class="m" style="color:var(--muted);font-size:14px">Because layouts can vary, the parser gets hardened against real samples ("try to break it") before it ships. If a future receipt ever fails to parse cleanly, you fall back to quick manual entry — nothing breaks.</p>
-  </div>
-
-  <h2>4 · Under the hood</h2>
-  <table>
-    <tr><th>Piece</th><th>Choice</th></tr>
-    <tr><td>Foundation</td><td>Standalone personal web app on Vercel — no portal SSO, no multi-user plumbing.</td></tr>
-    <tr><td>Stack</td><td>Next.js + TypeScript, server actions (no separate API layer), Tailwind.</td></tr>
-    <tr><td>Database</td><td>Postgres on Neon. <strong>~5 tables</strong>: Item, Category, Purchase, Budget, Settings.</td></tr>
-    <tr><td>Price history</td><td>Calculated live from your purchases — no caching machinery.</td></tr>
-    <tr><td>Login</td><td>One 4-digit PIN (stored hashed) + a remembered session. No accounts system.</td></tr>
-    <tr><td>Mobile</td><td>Light PWA touch — installs to your home screen, loads instantly.</td></tr>
-    <tr><td>Money</td><td>Stored as whole fils (no rounding drift), shown as AED.</td></tr>
-  </table>
-
-  <h2>5 · What we're deliberately NOT building</h2>
-  <p>The current FilsWise carries all of this. Shelfie drops every bit of it:</p>
-  <p style="line-height:2.2">
-    <span class="tag cut">Portal SSO / multi-user</span>
-    <span class="tag cut">Offer-authenticity engine</span>
-    <span class="tag cut">Trips + merge/split</span>
-    <span class="tag cut">Tags system</span>
-    <span class="tag cut">Budget Coach</span>
-    <span class="tag cut">Investment insights</span>
-    <span class="tag cut">Timing "best day" insights</span>
-    <span class="tag cut">Ramadan engine</span>
-    <span class="tag cut">Alerts + real-time SSE</span>
-    <span class="tag cut">Web-push</span>
-    <span class="tag cut">Barcode scanning</span>
-    <span class="tag cut">Watchlists</span>
-    <span class="tag cut">Excel export</span>
-  </p>
-  <p class="m" style="color:var(--muted);font-size:14px">From 20 data tables → ~5. From 37 API routes → none (server actions). From ~16 services → a handful.</p>
-
-  <h2>6 · How we'll build it</h2>
-  <ol>
-    <li><strong>You approve</strong> this spec + the mockup (right here, in your browser).</li>
-    <li><strong>Written plan</strong> — a step-by-step implementation plan.</li>
-    <li><strong>Build test-first</strong> — the parser and core flows, with tests.</li>
-    <li><strong>Try to break it</strong> — hammer the parser with real receipts, fix what fails.</li>
-    <li><strong>Deploy to Vercel</strong> — you open the real app and confirm it works.</li>
-  </ol>
-  <p>Everything runs on <strong>Opus</strong>, per your instruction.</p>
-
-  <p class="foot">Shelfie · design spec · built for review before any app code is written. Mockups use fake sample groceries — never your real data.</p>
-</div>
+  <script src="theme.js"></script>
 </body>
 </html>

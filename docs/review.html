@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shelfie — Adversarial Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('shelfie-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<link rel="stylesheet" href="shelfie.css" />
+<style>
+  .wrap{max-width:820px;margin:0 auto;padding:52px 20px 80px}
+  .nav{display:flex;gap:10px;margin-bottom:26px;flex-wrap:wrap}
+  .nav a{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;text-decoration:none;color:var(--green-strong);font-weight:700;font-size:14px}
+  .head .shield{font-size:40px}
+  h1{font-size:clamp(34px,7vw,52px);margin:8px 0 6px}
+  .lede{color:var(--ink-soft);font-size:17px;max-width:60ch;margin:0 0 4px}
+  .lede b{color:var(--ink)}
+  .counts{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0}
+  .stat{flex:1;min-width:120px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+  .stat .n{font-family:var(--font-display);font-size:34px;font-weight:600;line-height:1}
+  .stat .l{color:var(--ink-soft);font-size:13px;margin-top:4px;font-weight:600}
+  .stat.crit .n{color:var(--red)} .stat.adopt .n{color:var(--green)}
+  .five{background:var(--green-soft);border:1px solid color-mix(in srgb,var(--green) 35%,var(--line));
+    border-radius:18px;padding:20px 22px;margin:8px 0 30px}
+  .five h3{margin:0 0 8px;font-size:19px;color:var(--green-strong)}
+  .five ol{margin:0;padding-left:20px}.five li{margin:5px 0}
+  .sechead{font-family:var(--font-display);font-size:15px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--ink-faint);margin:34px 0 12px;display:flex;align-items:center;gap:10px}
+  .sechead::after{content:"";flex:1;border-top:2px dashed var(--line)}
+  .find{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:12px 0;box-shadow:var(--shadow-sm)}
+  .find .top{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .find h4{font-family:var(--font-body);font-weight:800;font-size:17px;margin:0;flex:1;min-width:60%}
+  .sev{font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em}
+  .sev.critical{background:var(--red-soft);color:var(--red)}
+  .sev.major{background:var(--amber-soft);color:var(--amber)}
+  .sev.minor{background:var(--line-soft);color:var(--ink-soft)}
+  .cat{font-size:11px;font-weight:700;color:var(--ink-faint);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+  .find .row{font-size:14.5px;margin:7px 0}
+  .find .row .k{font-weight:700;color:var(--ink)}
+  .find .row.fix{background:var(--card-2);border-radius:10px;padding:9px 12px;border-left:3px solid var(--green)}
+  .verdict{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;margin-top:10px;
+    padding:5px 11px;border-radius:999px}
+  .verdict.adopted{background:var(--green-soft);color:var(--green-strong)}
+  .verdict.noted{background:var(--amber-soft);color:var(--amber)}
+  .foot{margin-top:40px;color:var(--ink-faint);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+  <button class="theme-toggle" aria-label="Toggle light/dark"><span class="moon">🌙</span><span class="sun">☀️</span></button>
+  <div class="wrap">
+    <div class="nav">
+      <a href="index.html">← Hub</a><a href="spec.html">Design Spec</a><a href="mockup.html">📱 Mockup</a>
+    </div>
+    <header class="head rise">
+      <div class="shield">🛡️</div>
+      <h1>Adversarial Review</h1>
+      <p class="lede">Before writing a single line of app code, I ran a skeptical Opus engineer over the design with one job: <b>break it</b>. It found real correctness holes — the kind that make the numbers quietly wrong. Here's the honest teardown, and <b>what I'm doing about each</b>.</p>
+    </header>
+
+    <div class="counts rise" style="animation-delay:.06s">
+      <div class="stat crit"><div class="n">4</div><div class="l">Critical</div></div>
+      <div class="stat"><div class="n">8</div><div class="l">Major</div></div>
+      <div class="stat"><div class="n">6</div><div class="l">Minor</div></div>
+      <div class="stat adopt"><div class="n">17</div><div class="l">Folded into the design</div></div>
+    </div>
+
+    <div class="five rise" style="animation-delay:.1s">
+      <h3>🎯 The five that mattered most</h3>
+      <ol>
+        <li><b>Compare unit price, not line total</b> — a 6-pack line vs a single would break every verdict.</li>
+        <li><b>Keep item identity clean</b> — fuzzy-match + a "is this the same item?" prompt + a merge tool.</li>
+        <li><b>Never double-import a receipt</b> — fingerprint each import and warn on repeats.</li>
+        <li><b>Throttle the PIN</b> — lockout after repeated fails so a public URL can't be brute-forced.</li>
+        <li><b>Let you export your data</b> — one-tap download so your history is never trapped or lost.</li>
+      </ol>
+    </div>
+
+    <div id="crit"></div>
+    <div id="major"></div>
+    <div id="minor"></div>
+
+    <p class="foot rise">Every finding above was surfaced and judged before approval — this is the "try to break it, then fix it" step, made visible.<br>Reviewed on Opus · <a href="spec.html">see the updated spec →</a></p>
+  </div>
+
+<script>
+const F=[
+ {sev:"critical",cat:"Price logic",t:"Line-total history compares packs against singles",
+  s:'Receipt line "Milk 2L ×6 = 29.94" and a manual "Milk 2L ×1 = 5.75" both saved as the line total. Best-ever becomes 5.75, highest 29.94 — type 5.90 at the shelf and it wrongly says "pricier than usual."',
+  f:"All price-history math (last/best/avg/highest + verdict) runs on unit price = total ÷ quantity. Line total is kept only for the Month tab.",v:"adopted"},
+ {sev:"critical",cat:"Data model",t:"Item identity fragments across three names",
+  s:'The parser emits "ALM FRSH MILK 2L", you once typed "milk", autocomplete missed it so you typed "Almarai Milk 2L". Three items, each with a sliver of history — every stat is computed over a fragment.',
+  f:'Normalized fuzzy lookup on entry + import, with an "is this <existing item>?" confirm before creating anything new, plus a lightweight merge action to fix fragmentation.',v:"adopted"},
+ {sev:"critical",cat:"Parser",t:"Re-importing the same receipt doubles the month",
+  s:"You import the PDF, aren't sure it saved, open the email and import again. Every line inserts twice; month spend jumps and every item's average is skewed by phantom buys.",
+  f:"Fingerprint each import (store + date + grand total / PDF hash). On a match, warn 'already imported' and require explicit confirm.",v:"adopted"},
+ {sev:"critical",cat:"Parser",t:"No defined behavior when the total doesn't match",
+  s:"Real receipts have VAT columns, bag fees, loyalty-discount lines and weighed produce. The parsed lines routinely won't sum to the grand total — and the spec never said what happens when the self-check fails.",
+  f:"Parser output is always DRAFT rows for review, never an auto-insert. Set a ±0.05 tolerance; on mismatch, open an editable line-review screen showing the delta before anything saves.",v:"adopted"},
+
+ {sev:"major",cat:"Price logic",t:"Offer prices poison the 'best ever' benchmark",
+  s:'Nescafé hit 24.95 on a one-off promo; normal is 34.95. "Best ever" locks to 24.95, so every normal shelf price reads "pricier" — useless for exactly the items that go on sale. The onOffer flag existed but the verdict ignored it.',
+  f:"Compute best/avg benchmarks over non-offer purchases only (fall back to all if none). Label the all-time best as '(on offer)'.",v:"adopted"},
+ {sev:"major",cat:"Price logic",t:"Verdict collapses with only 1–2 purchases",
+  s:"A new item with one price at 5.75 makes best = avg = highest = 5.75; the bands degenerate and imply confidence you don't have.",
+  f:"Below 3 non-offer buys, suppress the verdict: show 'Only N past prices — not enough to judge' + the raw last/min.",v:"adopted"},
+ {sev:"major",cat:"Data model",t:"Imported items land with no category",
+  s:"Category is set manually per item. A 40-line import creates 40 uncategorized items, so the Month tab's 'where it went' shows AED 380 Uncategorized — the flagship view goes blank after your main way of logging.",
+  f:"Bulk-tag categories in the same post-import review screen, and keyword-seed from names (milk/laban → Dairy). 'Uncategorized' becomes a prompt, not a silent default.",v:"adopted"},
+ {sev:"major",cat:"Money/units",t:"Weighed items mix kg-price with count-price",
+  s:"Bananas from the receipt: 0.425 kg → 8.49/kg. Later you add 'Bananas ×1 = 3.00' meaning a bunch. 3.00 and 8.49/kg get averaged — nonsense.",
+  f:"Respect the unit: only compare same-basis purchases (per-kg vs per-count), and label the shelf input ('price per kg') accordingly.",v:"adopted"},
+ {sev:"major",cat:"Security",t:"PIN is online-brute-forceable",
+  s:"Public URL + 4-digit PIN = 10,000 combos with no rate limit. A script could walk the whole space in minutes. Hashing only protects a DB leak, not online guessing.",
+  f:"Server-side throttle (lockout after 5 fails/60s) + a long httpOnly session cookie after success. Option to go 6-digit.",v:"adopted"},
+ {sev:"major",cat:"Scope",t:"No backup/export = single point of total loss",
+  s:"Neon's free tier can suspend inactive DBs; one bad migration and two years of prices vanish with no recovery — and no way to get your data out.",
+  f:"A one-tap 'Download my data' (JSON/CSV of purchases + items + budgets). ~30 lines; not the cut Excel-reporting feature.",v:"adopted"},
+ {sev:"major",cat:"Scope",t:"The 'works at the shelf offline' promise isn't real",
+  s:"The shelf check is a server round-trip to Postgres. On 1 bar in a Carrefour aisle it spins or fails — a PWA shell doesn't make server data offline.",
+  f:"Cache each viewed item's computed stats client-side so a recently-seen item's verdict works offline; and stop over-promising full offline.",v:"adopted"},
+ {sev:"major",cat:"Budget logic",t:"Timezone can bucket a purchase into the wrong month",
+  s:"A buy at 23:30 on 31 July Dubai stored as UTC can land in the wrong month; budget pace flips red/green on a boundary day.",
+  f:"Store purchasedAt as date-only in Dubai time and bucket by the 'YYYY-MM' string in Asia/Dubai — never off a UTC timestamp.",v:"adopted"},
+
+ {sev:"minor",cat:"Price logic",t:"Cross-store prices averaged together",
+  s:"Lulu milk 5.25 and Carrefour milk 5.95 average to 5.60; standing in Carrefour, 5.90 reads 'about the same' when it's the normal Carrefour price.",
+  f:"Keep the average global for simplicity, but show the store beside each Last/Best/Highest so you can eyeball it. (You're 95% Carrefour, so low impact.)",v:"noted"},
+ {sev:"minor",cat:"Budget logic",t:"A month with no budget set",
+  s:"Flip to a month with no budget row and the pace math divides by zero → NaN or a false red.",
+  f:"Detect it, show 'No budget set' + a set CTA, skip pace coloring.",v:"adopted"},
+ {sev:"minor",cat:"Budget logic",t:"Budget must be re-entered every month",
+  s:"August 1st arrives and the Month tab is dead until you remember to set a budget.",
+  f:"Default a new month to the previous month's amount (still editable). One query, no new table.",v:"adopted"},
+ {sev:"minor",cat:"Data model",t:"Typos silently create junk items",
+  s:"You type 'Mlik', don't notice, save — a permanent junk item now sits in autocomplete holding an orphan price.",
+  f:"Covered by the fuzzy-match + confirm from finding #2; near-matches suggest the real item instead of creating one.",v:"adopted"},
+ {sev:"minor",cat:"Price logic",t:"Stale old prices inflate the benchmark forever",
+  s:"A 2024 price of 3.99 stays 'best ever' forever; with grocery inflation the verdict permanently reads 'pricier' against a price that no longer exists.",
+  f:"Window the benchmark (last 12 months / last N buys); keep all-time best & highest for display only.",v:"adopted"},
+ {sev:"minor",cat:"Security",t:"Session/PIN lifetime unspecified",
+  s:"Either it re-prompts the PIN constantly (annoying) or holds a session forever (a lost phone stays unlocked).",
+  f:"httpOnly session with a 7-day TTL + a manual 'Lock' action.",v:"adopted"}
+];
+function card(x){return `<div class="find rise"><div class="top">
+  <h4>${x.t}</h4><span class="sev ${x.sev}">${x.sev}</span><span class="cat">${x.cat}</span></div>
+  <div class="row"><span class="k">What goes wrong:</span> ${x.s}</div>
+  <div class="row fix"><span class="k">Minimum fix:</span> ${x.f}</div>
+  <span class="verdict ${x.v}">${x.v==="adopted"?"✓ Folded into the design":"◐ Noted (low impact)"}</span></div>`;}
+function fill(id,sev){document.getElementById(id).innerHTML=
+  `<div class="sechead">${sev==='critical'?'🔴 Critical':sev==='major'?'🟠 Major':'⚪ Minor'}</div>`+
+  F.filter(f=>f.sev===sev).map(card).join("");}
+fill("crit","critical");fill("major","major");fill("minor","minor");
+</script>
+<script src="theme.js"></script>
+</body>
+</html>

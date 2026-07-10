@@ -3,53 +3,106 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Shelfie — Review</title>
+<title>Shelfie — Project Hub</title>
+<meta name="description" content="Shelfie — a much simpler UAE grocery price + budget tracker. Design review hub." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('shelfie-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<link rel="stylesheet" href="shelfie.css" />
 <style>
-  :root{--green:#12b76a;--green-dark:#039855;--green-soft:#e7f7ef;--ink:#101828;--muted:#667085;--line:#eaecf0}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:radial-gradient(1000px 500px at 50% -10%,#dff3e9,transparent),#f2f4f3;color:var(--ink);
-    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px 18px}
-  .card{max-width:600px;width:100%;background:#fff;border:1px solid var(--line);border-radius:24px;
-    padding:40px 34px;box-shadow:0 20px 50px rgba(16,24,40,.10);text-align:center}
-  .cart{font-size:56px}
-  h1{font-size:40px;margin:6px 0 4px;letter-spacing:-.03em}
-  .tag{color:var(--muted);font-size:18px;margin:0 0 6px}
-  .pitch{color:var(--green-dark);font-weight:600;font-style:italic;margin:0 0 26px}
-  .btns{display:flex;flex-direction:column;gap:12px}
-  a.b{display:block;text-decoration:none;border-radius:14px;padding:16px;font-weight:700;font-size:17px}
-  a.primary{background:var(--green);color:#fff}
-  a.sec{background:var(--green-soft);color:var(--green-dark)}
-  a.lite{background:#f2f4f7;color:var(--ink);font-size:15px;padding:13px}
-  .three{display:flex;gap:10px;margin:26px 0 4px;text-align:left}
-  .three div{flex:1;background:#f8faf9;border:1px solid var(--line);border-radius:14px;padding:14px}
-  .three .e{font-size:22px}.three .h{font-weight:700;font-size:14px;margin:4px 0 2px}.three .m{color:var(--muted);font-size:12px;line-height:1.4}
-  .note{margin-top:24px;color:var(--muted);font-size:13px}
-  .status{display:inline-block;background:#fef0c7;color:#b54708;font-weight:700;font-size:12px;padding:5px 12px;border-radius:999px;margin-bottom:18px}
+  .wrap{max-width:900px;margin:0 auto;padding:64px 22px 70px}
+  .hero{text-align:center;margin-bottom:14px}
+  .cartmark{font-size:44px;line-height:1;filter:saturate(1.1)}
+  .word{font-family:var(--font-display);font-weight:600;font-size:clamp(58px,13vw,104px);
+    letter-spacing:-.04em;margin:6px 0 0;line-height:.94;
+    background:linear-gradient(180deg,var(--ink),color-mix(in srgb,var(--ink) 62%,var(--green)));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .pitch{font-family:var(--font-display);font-style:italic;font-size:clamp(18px,3.4vw,24px);
+    color:var(--green-strong);font-weight:400;margin:16px auto 4px;max-width:34ch;line-height:1.35}
+  .sub{color:var(--ink-soft);font-size:16px;max-width:52ch;margin:12px auto 0}
+  .statuschip{display:inline-flex;align-items:center;gap:8px;margin:26px 0 6px;
+    background:var(--amber-soft);color:var(--amber);font-weight:700;font-size:12.5px;
+    padding:7px 15px;border-radius:999px;letter-spacing:.04em}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin:40px 0 8px}
+  @media(max-width:640px){.grid{grid-template-columns:1fr}}
+  .card{position:relative;display:flex;flex-direction:column;gap:2px;text-decoration:none;color:inherit;
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:24px 22px 20px;box-shadow:var(--shadow-sm);overflow:hidden;
+    transition:transform .22s cubic-bezier(.2,.7,.2,1),box-shadow .22s,border-color .22s}
+  .card::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;
+    background:repeating-linear-gradient(90deg,var(--line) 0 7px,transparent 7px 14px)}
+  .card:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--green) 40%,var(--line))}
+  .card.locked{opacity:.62;pointer-events:none}
+  .card .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .icon{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:24px;
+    background:var(--green-soft)}
+  .card h2{font-size:23px;margin:2px 0 0}
+  .card p{color:var(--ink-soft);font-size:14.5px;margin:6px 0 0}
+  .go{margin-top:14px;font-weight:700;font-size:14px;color:var(--green-strong);display:flex;align-items:center;gap:6px}
+  .go .arr{transition:transform .2s}.card:hover .go .arr{transform:translateX(4px)}
+
+  .foot{margin-top:44px;display:flex;flex-wrap:wrap;gap:10px 20px;justify-content:center;align-items:center;
+    color:var(--ink-faint);font-size:13px}
+  .foot a{color:var(--green-strong);text-decoration:none;font-weight:600}
+  .foot .sep{width:4px;height:4px;border-radius:50%;background:var(--line);display:inline-block}
+  .opus{border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-weight:600;color:var(--ink-soft)}
 </style>
 </head>
 <body>
-  <div class="card">
-    <div class="status">🟡 DESIGN REVIEW — nothing built yet</div>
-    <div class="cart">🛒</div>
-    <h1>Shelfie</h1>
-    <p class="tag">A much simpler grocery price + budget tracker.</p>
-    <p class="pitch">"Is this shelf price actually good, or have I paid less before?"</p>
+  <button class="theme-toggle" aria-label="Toggle light/dark"><span class="moon">🌙</span><span class="sun">☀️</span></button>
 
-    <div class="btns">
-      <a class="b primary" href="mockup.html">📱 Open the clickable mockup</a>
-      <a class="b sec" href="spec.html">📄 Read the full spec</a>
-      <a class="b lite" href="https://github.com/xCloudy75z/shelfie" target="_blank">View the GitHub repo ↗</a>
-    </div>
+  <div class="wrap">
+    <header class="hero rise">
+      <div class="cartmark">🛒</div>
+      <h1 class="word">Shelfie</h1>
+      <p class="pitch">“Is this shelf price actually good — or have I paid less before?”</p>
+      <p class="sub">A deliberately simple UAE grocery price &amp; budget tracker. One person, one PIN, three tabs — and the emailed Carrefour receipt logs your whole trip in a tap.</p>
+      <div class="statuschip"><span class="pulse"></span> DESIGN REVIEW · nothing built yet</div>
+    </header>
 
-    <div class="three">
-      <div><div class="e">🛒</div><div class="h">At the shelf</div><div class="m">Check if a price is good.</div></div>
-      <div><div class="e">🧾</div><div class="h">After shopping</div><div class="m">Import the PDF receipt.</div></div>
-      <div><div class="e">📅</div><div class="h">End of month</div><div class="m">Budget &amp; where it went.</div></div>
-    </div>
+    <main class="grid">
+      <a class="card rise" style="animation-delay:.05s" href="mockup.html">
+        <div class="top"><div class="icon">📱</div><span class="badge badge-ready"><span class="badge-dot"></span>Ready</span></div>
+        <h2>Interactive Mockup</h2>
+        <p>Tap through the real app feel — PIN pad, the three tabs, the receipt import, the shelf-price verdict.</p>
+        <span class="go">Open it <span class="arr">→</span></span>
+      </a>
 
-    <p class="note">Three tabs · one PIN · ~5 tables. Everything the current app over-builds is dropped.<br>
-    Mockups use fake sample groceries — never your real data.</p>
+      <a class="card rise" style="animation-delay:.12s" href="spec.html">
+        <div class="top"><div class="icon" style="background:var(--amber-soft)">📄</div><span class="badge badge-ready"><span class="badge-dot"></span>Ready</span></div>
+        <h2>Design Spec</h2>
+        <p>The whole plan in plain English — what's in, what we deliberately cut, the receipt parser, the tech.</p>
+        <span class="go">Read it <span class="arr">→</span></span>
+      </a>
+
+      <a class="card rise" style="animation-delay:.19s" href="review.html" id="reviewCard">
+        <div class="top"><div class="icon" style="background:var(--red-soft)">🛡️</div><span class="badge badge-ready" id="reviewBadge"><span class="badge-dot"></span>Ready</span></div>
+        <h2>Adversarial Review</h2>
+        <p>I tried to break my own design before building it — 18 findings, 17 folded back in. The honest teardown, with the fix for each.</p>
+        <span class="go">See what broke <span class="arr">→</span></span>
+      </a>
+
+      <span class="card locked rise" style="animation-delay:.26s">
+        <div class="top"><div class="icon" style="background:var(--line-soft)">🚀</div><span class="badge badge-coming"><span class="badge-dot"></span>Coming</span></div>
+        <h2>The Live App</h2>
+        <p>Built test-first on Opus after you approve — then deployed to Vercel for you to actually use.</p>
+        <span class="go" style="color:var(--ink-faint)">After approval</span>
+      </span>
+    </main>
+
+    <footer class="foot rise" style="animation-delay:.32s">
+      <span>🔒 Only code &amp; mockups here — never your real receipts or spending.</span>
+      <span class="sep"></span>
+      <a href="https://github.com/xCloudy75z/shelfie" target="_blank">GitHub repo ↗</a>
+      <span class="sep"></span>
+      <span class="opus">⚡ All Opus</span>
+    </footer>
   </div>
+
+  <script src="theme.js"></script>
 </body>
 </html>
