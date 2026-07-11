@@ -67,7 +67,7 @@ const TASKS=[
  {id:1, n:"Receipt parser", d:"lines → items · qty · unit price · line total; grand-total self-check", s:"done"},
  {id:2, n:"On-device PDF read", d:"pdf.js coordinate extraction — receipt never leaves your phone", s:"done"},
  {id:3, n:"Import + dedupe", d:"create items/purchases · fingerprint blocks double-imports", s:"done"},
- {id:4, n:"Review screen", d:"editable draft list, total-match badge, save the trip", s:"active"}
+ {id:4, n:"Review screen", d:"editable draft list, total-match badge, save the trip", s:"done"}
 ];
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
