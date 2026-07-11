@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  items Item[]
+}
+
+model Item {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  normalized String
+  categoryId String?
+  category   Category?  @relation(fields: [categoryId], references: [id])
+  purchases  Purchase[]
+  createdAt  DateTime   @default(now())
+
+  @@index([normalized])
+}
+
+model Purchase {
+  id          String         @id @default(cuid())
+  itemId      String
+  item        Item           @relation(fields: [itemId], references: [id])
+  totalFils   Int
+  quantity    Float          @default(1)
+  unit        String         @default("each")
+  store       String         @default("Carrefour")
+  onOffer     Boolean        @default(false)
+  purchasedAt DateTime // stored as instant; bucketed via Asia/Dubai
+  monthKey    String // "YYYY-MM" in Dubai time, denormalized for Month tab
+  importId    String?
+  import      ReceiptImport? @relation(fields: [importId], references: [id])
+  createdAt   DateTime       @default(now())
+
+  @@index([itemId])
+  @@index([monthKey])
+}
+
+model Budget {
+  id         String @id @default(cuid())
+  monthKey   String @unique // "YYYY-MM"
+  amountFils Int
+}
+
+model ReceiptImport {
+  // used by Plan 2; created now to avoid re-migration
+  id          String     @id @default(cuid())
+  fingerprint String     @unique
+  store       String
+  totalFils   Int
+  importedAt  DateTime   @default(now())
+  purchases   Purchase[]
+}
+
+model Settings {
+  id             Int       @id @default(1)
+  pinHash        String?
+  pinSalt        String?
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+}
