@@ -1,4 +1,5 @@
 import PurchaseForm from "@/app/components/PurchaseForm";
+import ReceiptImport from "@/app/components/ReceiptImport";
 import { db } from "@/lib/db";
 import { formatAed } from "@/lib/money";
 
@@ -29,6 +30,8 @@ export default async function LogPage() {
       <p className="app-sub">
         Home from the shop? Import the receipt. Just one item? Add it below.
       </p>
+
+      <ReceiptImport />
 
       <PurchaseForm
         items={items.map((i) => i.name)}

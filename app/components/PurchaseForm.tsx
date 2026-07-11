@@ -183,42 +183,6 @@ export default function PurchaseForm({ items, categories }: Props) {
 
   return (
     <form onSubmit={onSubmit}>
-      {/* Import receipt — placeholder, ships in Plan 2 */}
-      <button
-        type="button"
-        disabled
-        style={{
-          width: "100%",
-          border: 0,
-          borderRadius: 14,
-          padding: 15,
-          fontSize: 16,
-          fontWeight: 700,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          background: "var(--green-soft)",
-          color: "var(--green-strong)",
-          cursor: "not-allowed",
-          opacity: 0.85,
-        }}
-        title="Coming soon"
-      >
-        📄 Import receipt (PDF)
-      </button>
-      <p
-        className="mono"
-        style={{
-          textAlign: "center",
-          fontSize: 11.5,
-          color: "var(--ink-faint)",
-          margin: "8px 0 0",
-        }}
-      >
-        Coming soon · a whole trip in one tap
-      </p>
-
       <div
         style={{
           display: "flex",
