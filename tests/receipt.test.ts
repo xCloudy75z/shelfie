@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseReceipt } from "@/lib/receipt";
+import { parseReceipt, computeFingerprint, type DraftItem } from "@/lib/receipt";
 
 const LINES = [
   "Description Qty Unit Price Incl Unit Price Excl. Total Price Excl VAT Rate VAT Amount Tot Price Incl VAT",
@@ -42,5 +42,44 @@ describe("parseReceipt", () => {
   });
   it("returns empty items for junk input", () => {
     expect(parseReceipt(["hello", "world"]).items).toHaveLength(0);
+  });
+});
+
+describe("computeFingerprint", () => {
+  const A: DraftItem = { name: "WATER 1.5L X 6", quantity: 6, unit: "each", unitPriceFils: 499, lineFils: 2994 };
+  const B: DraftItem = { name: "CHEESE BLOCK 500G", quantity: 1, unit: "each", unitPriceFils: 1899, lineFils: 1899 };
+  const C: DraftItem = { name: "TOMATO EP", quantity: 0.62, unit: "kg", unitPriceFils: 698, lineFils: 433 };
+
+  it("is order-independent: same items in any order give the same fingerprint", () => {
+    const f1 = computeFingerprint([A, B, C], 5326);
+    const f2 = computeFingerprint([C, A, B], 5326);
+    const f3 = computeFingerprint([B, C, A], 5326);
+    expect(f1).toBe(f2);
+    expect(f1).toBe(f3);
+  });
+
+  it("changes when a line price changes", () => {
+    const f1 = computeFingerprint([A, B, C], 5326);
+    const changed = { ...B, lineFils: B.lineFils + 100 };
+    const f2 = computeFingerprint([A, changed, C], 5326);
+    expect(f2).not.toBe(f1);
+  });
+
+  it("changes when the item count changes", () => {
+    const f1 = computeFingerprint([A, B, C], 5326);
+    const f2 = computeFingerprint([A, B], 3893);
+    expect(f2).not.toBe(f1);
+  });
+
+  it("changes when the grand total changes", () => {
+    const f1 = computeFingerprint([A, B, C], 5326);
+    const f2 = computeFingerprint([A, B, C], 9999);
+    expect(f2).not.toBe(f1);
+  });
+
+  it("is stable and non-empty", () => {
+    const f = computeFingerprint([A, B, C], 5326);
+    expect(f).toBe(computeFingerprint([A, B, C], 5326));
+    expect(f.length).toBeGreaterThan(0);
   });
 });

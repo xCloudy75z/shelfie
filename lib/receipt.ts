@@ -52,3 +52,23 @@ export function parseReceipt(lines: string[]): ParsedReceipt {
   if (items.length === 0) warnings.push("No items were recognised in this file.");
   return { items, grandTotalFils, paidFils, sumFils, matchesTotal, warnings };
 }
+
+/**
+ * A stable, deterministic fingerprint for a parsed receipt, used to detect
+ * re-imports of the same emailed PDF. Built from the item count + grand total +
+ * the SORTED list of `name|lineFils` pairs, so the physical row order never
+ * changes the result — the same trip always hashes the same. A one-cent price
+ * change or a different item count produces a different fingerprint.
+ *
+ * Uses a 32-bit FNV-1a rolling hash (no crypto import needed) rendered in base36.
+ */
+export function computeFingerprint(items: DraftItem[], grandTotalFils: number | null): string {
+  const pairs = items.map((i) => `${i.name}|${i.lineFils}`).sort();
+  const payload = `${items.length}#${grandTotalFils ?? ""}#${pairs.join(";")}`;
+  let h = 0x811c9dc5; // FNV-1a offset basis
+  for (let i = 0; i < payload.length; i++) {
+    h ^= payload.charCodeAt(i);
+    h = Math.imul(h, 0x01000193); // FNV prime
+  }
+  return (h >>> 0).toString(36);
+}
