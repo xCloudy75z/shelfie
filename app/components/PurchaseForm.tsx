@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type CSSProperties } from "react";
 import { addPurchase, type AddPurchaseResult } from "@/app/actions/purchases";
+import { parsePriceFils } from "@/lib/money";
 
 const STORES = ["Carrefour", "Lulu", "Union Coop", "Other"];
 
@@ -102,6 +103,10 @@ export default function PurchaseForm({ items, categories }: Props) {
         setError("Could not save — please try again.");
         return;
       }
+      if ("error" in res) {
+        setError(res.error);
+        return;
+      }
       if ("needsConfirm" in res) {
         setConfirm(res.suggestion);
         return;
@@ -116,6 +121,10 @@ export default function PurchaseForm({ items, categories }: Props) {
     e.preventDefault();
     if (!itemName.trim()) {
       setError("Add an item name first.");
+      return;
+    }
+    if (parsePriceFils(priceAed) === null) {
+      setError("Enter a valid price above 0.");
       return;
     }
     run({});

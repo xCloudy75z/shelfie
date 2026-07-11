@@ -3,7 +3,7 @@
 import { useState, useTransition, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { updatePurchase, deletePurchase } from "@/app/actions/purchases";
-import { filsFromAed, formatAed } from "@/lib/money";
+import { filsFromAed, parsePriceFils, formatAed } from "@/lib/money";
 
 const STORES = ["Carrefour", "Lulu", "Union Coop", "Other"];
 
@@ -115,9 +115,14 @@ function PurchaseRow({
 
   function save() {
     setError(null);
+    if (parsePriceFils(price) === null) {
+      setError("Enter a valid price above 0.");
+      return;
+    }
     startTransition(async () => {
+      let res: Awaited<ReturnType<typeof updatePurchase>>;
       try {
-        await updatePurchase(row.id, {
+        res = await updatePurchase(row.id, {
           priceAed: price,
           quantity: parseFloat(qty) || 1,
           store,
@@ -126,6 +131,10 @@ function PurchaseRow({
         });
       } catch {
         setError("Could not save — please try again.");
+        return;
+      }
+      if ("error" in res) {
+        setError(res.error);
         return;
       }
       onDone();

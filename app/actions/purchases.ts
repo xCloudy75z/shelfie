@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { filsFromAed, aedFromFils } from "@/lib/money";
+import { parsePriceFils, aedFromFils } from "@/lib/money";
 import { normalizeName, resolveItem } from "@/lib/items";
 import { dubaiMonthKey } from "@/lib/dates";
 import { guessCategory } from "@/lib/categories";
@@ -23,7 +23,8 @@ export type AddPurchaseInput = {
 
 export type AddPurchaseResult =
   | { ok: true }
-  | { needsConfirm: true; suggestion: { id: string; name: string } };
+  | { needsConfirm: true; suggestion: { id: string; name: string } }
+  | { error: string };
 
 /**
  * Log a purchase, keeping item identity clean.
@@ -38,6 +39,10 @@ export type AddPurchaseResult =
 export async function addPurchase(
   input: AddPurchaseInput,
 ): Promise<AddPurchaseResult> {
+  // Validate money before touching the DB so a bad price never creates an item.
+  const totalFils = parsePriceFils(input.priceAed);
+  if (totalFils === null) return { error: "Enter a valid price above 0" };
+
   const existing = await db.item.findMany({ select: { id: true, name: true } });
   const res = resolveItem(input.itemName, existing);
 
@@ -71,7 +76,7 @@ export async function addPurchase(
   await db.purchase.create({
     data: {
       itemId,
-      totalFils: filsFromAed(input.priceAed),
+      totalFils,
       quantity: input.quantity || 1,
       unit: input.unit || "each",
       store: input.store || "Carrefour",
@@ -83,6 +88,7 @@ export async function addPurchase(
 
   revalidatePath("/month");
   revalidatePath("/prices");
+  revalidatePath("/log");
   return { ok: true };
 }
 
@@ -102,12 +108,15 @@ export type UpdatePurchaseInput = {
 export async function updatePurchase(
   id: string,
   input: UpdatePurchaseInput,
-): Promise<{ ok: true }> {
+): Promise<{ ok: true } | { error: string }> {
+  const totalFils = parsePriceFils(input.priceAed);
+  if (totalFils === null) return { error: "Enter a valid price above 0" };
+
   const purchasedAt = new Date(input.purchasedAt);
   await db.purchase.update({
     where: { id },
     data: {
-      totalFils: filsFromAed(input.priceAed),
+      totalFils,
       quantity: input.quantity || 1,
       store: input.store || "Carrefour",
       onOffer: input.onOffer,

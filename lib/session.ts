@@ -4,9 +4,21 @@
 // `lib/auth.ts` because it needs `node:crypto` scrypt.
 import { SignJWT, jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(
-  process.env.SESSION_SECRET || "dev-only-secret-change-me",
-);
+// Resolved per-invocation (not at module top-level) so a build without the env
+// var doesn't crash — only a real request in production throws. In production a
+// missing SESSION_SECRET is fatal: we refuse to sign tokens with a public key.
+function secretKey(): Uint8Array {
+  const s = process.env.SESSION_SECRET;
+  if (!s) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "SESSION_SECRET is not set — refusing to run without a real session secret.",
+      );
+    }
+    return new TextEncoder().encode("dev-only-secret-change-me"); // local dev only
+  }
+  return new TextEncoder().encode(s);
+}
 
 /** Sign a 7-day HS256 session token. */
 export async function makeSession(): Promise<string> {
@@ -14,14 +26,14 @@ export async function makeSession(): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(secret);
+    .sign(secretKey());
 }
 
 /** Returns true if the token is a valid, unexpired session. */
 export async function readSession(token?: string): Promise<boolean> {
   if (!token) return false;
   try {
-    await jwtVerify(token, secret);
+    await jwtVerify(token, secretKey());
     return true;
   } catch {
     return false;
