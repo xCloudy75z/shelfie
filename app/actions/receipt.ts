@@ -44,7 +44,15 @@ export async function parseReceiptUpload(
       "@/lib/receipt-extract-server"
     );
     lines = await extractReceiptLinesServer(buf);
-  } catch {
+  } catch (err) {
+    // Instrumentation only: surface the REAL extraction failure in the server
+    // logs so it can be diagnosed. Logs the error (name/message/stack) ONLY —
+    // never the uploaded file's bytes or extracted text, to honour the privacy
+    // rule. Safe to keep; can be tidied once extraction is reliable on Vercel.
+    console.error(
+      "[parseReceiptUpload] extraction failed:",
+      err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : err,
+    );
     return { error: "Couldn't read that PDF — is it the Carrefour receipt?" };
   }
 
