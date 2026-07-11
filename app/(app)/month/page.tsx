@@ -7,7 +7,7 @@ import CategoryBars from "@/app/components/CategoryBars";
 import EditablePurchases, {
   type EditablePurchaseRow,
 } from "@/app/components/EditablePurchases";
-import ExportButton from "@/app/components/ExportButton";
+import BackupRestore from "@/app/components/BackupRestore";
 import VersionBar from "@/app/components/VersionBar";
 
 // Reads are per-request against the DB — never at build time.
@@ -40,15 +40,18 @@ export default async function MonthPage({
   const selected = month && MONTH_RE.test(month) ? month : currentKey;
   const isCurrent = selected === currentKey;
 
-  // Everything for the selected Dubai month, plus this month's budget (if any).
-  const [purchases, thisBudget] = await Promise.all([
+  // Everything for the selected Dubai month, plus this month's budget (if any)
+  // and the last-backed-up timestamp for the "Your data" card.
+  const [purchases, thisBudget, settings] = await Promise.all([
     db.purchase.findMany({
       where: { monthKey: selected },
       orderBy: { purchasedAt: "desc" },
       include: { item: { include: { category: true } } },
     }),
     db.budget.findUnique({ where: { monthKey: selected } }),
+    db.settings.findUnique({ where: { id: 1 }, select: { lastBackupAt: true } }),
   ]);
+  const lastBackupAt = settings?.lastBackupAt?.toISOString() ?? null;
 
   const spentFils = purchases.reduce((s, p) => s + p.totalFils, 0);
 
@@ -165,6 +168,27 @@ export default async function MonthPage({
           ›
         </Link>
       </div>
+
+      {/* Gentle nudge to take a first backup — never a modal. */}
+      {lastBackupAt == null && (
+        <a
+          href="#your-data"
+          style={{
+            display: "block",
+            margin: "0 2px 14px",
+            padding: "10px 14px",
+            borderRadius: 12,
+            border: "1px dashed var(--line)",
+            background: "var(--amber-soft)",
+            color: "var(--ink)",
+            fontSize: 13,
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          🛟 Not backed up yet — Back up now
+        </a>
+      )}
 
       {/* Spend vs budget */}
       <div className="card">
@@ -341,21 +365,10 @@ export default async function MonthPage({
         </div>
       </form>
 
-      {/* Export your data */}
+      {/* Back up / restore your data */}
       <div className="card">
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.04em",
-            color: "var(--ink-faint)",
-            marginBottom: 8,
-          }}
-        >
-          Your data
-        </div>
-        <ExportButton />
+        <div className="card-kicker">Your data</div>
+        <BackupRestore lastBackupAt={lastBackupAt} />
       </div>
 
       {/* Running version + one-tap update check */}

@@ -65,4 +65,5 @@ model Settings {
   pinSalt        String?
   failedAttempts Int       @default(0)
   lockedUntil    DateTime?
+  lastBackupAt   DateTime?
 }
