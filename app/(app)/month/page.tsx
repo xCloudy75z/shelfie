@@ -4,6 +4,9 @@ import { formatAed, aedFromFils } from "@/lib/money";
 import { dubaiMonthKey, dubaiToday, monthKeyToLabel } from "@/lib/dates";
 import { setBudget } from "@/app/actions/budget";
 import CategoryBars from "@/app/components/CategoryBars";
+import EditablePurchases, {
+  type EditablePurchaseRow,
+} from "@/app/components/EditablePurchases";
 import ExportButton from "@/app/components/ExportButton";
 import VersionBar from "@/app/components/VersionBar";
 
@@ -64,6 +67,18 @@ export default async function MonthPage({
     byCat.set(name, (byCat.get(name) ?? 0) + p.totalFils);
   }
   const catData = [...byCat].map(([name, fils]) => ({ name, fils }));
+
+  // Serializable rows for the editable client list — plain JSON only.
+  const purchaseRows: EditablePurchaseRow[] = purchases.map((p) => ({
+    id: p.id,
+    itemName: p.item.name,
+    priceAed: String(aedFromFils(p.totalFils)),
+    quantity: p.quantity,
+    unit: p.unit,
+    store: p.store,
+    onOffer: p.onOffer,
+    purchasedAt: dubaiToday(p.purchasedAt),
+  }));
 
   // Pace — only computed when we have a target to divide by.
   let pace: Pace | null = null;
@@ -253,7 +268,7 @@ export default async function MonthPage({
         <CategoryBars data={catData} />
       </div>
 
-      {/* Recent purchases */}
+      {/* Purchases — tap a row to edit or delete */}
       <div className="card">
         <div
           style={{
@@ -265,56 +280,12 @@ export default async function MonthPage({
             marginBottom: 4,
           }}
         >
-          Recent purchases
+          Purchases
         </div>
-        {purchases.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "4px 2px" }}>
-            No purchases logged for {monthKeyToLabel(selected)} yet.
-          </p>
-        ) : (
-          purchases.slice(0, 8).map((p) => (
-            <div
-              key={p.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "11px 2px",
-                borderBottom: "1px solid var(--line)",
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: "var(--green-soft)",
-                  display: "grid",
-                  placeItems: "center",
-                  fontSize: 18,
-                  flex: "none",
-                }}
-                aria-hidden
-              >
-                🧾
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600 }}>{p.item.name}</div>
-                <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>
-                  {p.store} ·{" "}
-                  {p.purchasedAt.toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    timeZone: "Asia/Dubai",
-                  })}
-                </div>
-              </div>
-              <span className="mono" style={{ marginLeft: "auto", fontWeight: 700 }}>
-                {formatAed(p.totalFils)}
-              </span>
-            </div>
-          ))
-        )}
+        <EditablePurchases
+          rows={purchaseRows}
+          monthLabel={monthKeyToLabel(selected)}
+        />
       </div>
 
       {/* Set / change budget */}

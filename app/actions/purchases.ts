@@ -86,6 +86,65 @@ export async function addPurchase(
   return { ok: true };
 }
 
+export type UpdatePurchaseInput = {
+  priceAed: string;
+  quantity: number;
+  store: string;
+  onOffer: boolean;
+  /** ISO date, yyyy-mm-dd, from an <input type="date">. */
+  purchasedAt: string;
+};
+
+/**
+ * Edit a logged purchase. The Dubai month bucket is recomputed from the new
+ * date so moving a purchase to a different month re-files it correctly.
+ */
+export async function updatePurchase(
+  id: string,
+  input: UpdatePurchaseInput,
+): Promise<{ ok: true }> {
+  const purchasedAt = new Date(input.purchasedAt);
+  await db.purchase.update({
+    where: { id },
+    data: {
+      totalFils: filsFromAed(input.priceAed),
+      quantity: input.quantity || 1,
+      store: input.store || "Carrefour",
+      onOffer: input.onOffer,
+      purchasedAt,
+      monthKey: dubaiMonthKey(purchasedAt),
+    },
+  });
+  revalidatePath("/month");
+  revalidatePath("/prices");
+  return { ok: true };
+}
+
+/**
+ * Delete a logged purchase. If it was the item's last remaining purchase, the
+ * now-orphaned item is removed too, keeping name autocomplete clean.
+ */
+export async function deletePurchase(id: string): Promise<{ ok: true }> {
+  const existing = await db.purchase.findUnique({
+    where: { id },
+    select: { itemId: true },
+  });
+  if (!existing) return { ok: true };
+
+  await db.purchase.delete({ where: { id } });
+
+  const remaining = await db.purchase.count({
+    where: { itemId: existing.itemId },
+  });
+  if (remaining === 0) {
+    await db.item.delete({ where: { id: existing.itemId } });
+  }
+
+  revalidatePath("/month");
+  revalidatePath("/prices");
+  return { ok: true };
+}
+
 export type ExportedData = {
   exportedAt: string;
   items: { id: string; name: string; category: string | null }[];
