@@ -4,6 +4,8 @@ import { formatAed, aedFromFils } from "@/lib/money";
 import { dubaiMonthKey, dubaiToday, monthKeyToLabel } from "@/lib/dates";
 import { setBudget } from "@/app/actions/budget";
 import CategoryBars from "@/app/components/CategoryBars";
+import ExportButton from "@/app/components/ExportButton";
+import VersionBar from "@/app/components/VersionBar";
 
 // Reads are per-request against the DB — never at build time.
 export const dynamic = "force-dynamic";
@@ -367,6 +369,26 @@ export default async function MonthPage({
           </button>
         </div>
       </form>
+
+      {/* Export your data */}
+      <div className="card">
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+            color: "var(--ink-faint)",
+            marginBottom: 8,
+          }}
+        >
+          Your data
+        </div>
+        <ExportButton />
+      </div>
+
+      {/* Running version + one-tap update check */}
+      <VersionBar />
     </div>
   );
 }

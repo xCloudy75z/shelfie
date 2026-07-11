@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Hanken_Grotesk, Spline_Sans_Mono } from "next/font/google";
 import "./globals.css";
+import ServiceWorkerRegister from "@/app/components/ServiceWorkerRegister";
 
 // Display serif for headings/wordmark, grotesk for body, mono for prices.
 // Exposed as CSS variables so globals.css can wire them into the design tokens.
@@ -23,6 +24,15 @@ const splineSansMono = Spline_Sans_Mono({
 export const metadata: Metadata = {
   title: "Shelfie",
   description: "Log a grocery purchase, see each item's price story, and watch the month against a budget.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    apple: "/icon.svg",
+    icon: "/icon.svg",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1f9d57",
 };
 
 // No-flash theme init: set data-theme on <html> before first paint by reading
@@ -43,7 +53,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <ServiceWorkerRegister />
+        {children}
+      </body>
     </html>
   );
 }
