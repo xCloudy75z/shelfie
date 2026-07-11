@@ -74,7 +74,7 @@ const TASKS=[
  {id:11,n:"Auto-update + version stamp", d:"one-tap update, build timestamp, installable PWA", s:"done"},
  {id:12,n:"Edit / delete logged purchases", d:"fix price/qty/store/date, delete with confirm", s:"done"},
  {id:13,n:"Safety fixes (from code review)", d:"reject blank/zero price · fail-fast on missing session secret", s:"done"},
- {id:14,n:"Backup & Restore + version card", d:"safe import/export, snapshot+undo, last-backed-up nudge", s:"active"}
+ {id:14,n:"Backup & Restore + version card", d:"safe import/export, snapshot+undo, last-backed-up nudge", s:"done"}
 ];
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
