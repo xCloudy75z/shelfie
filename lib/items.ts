@@ -20,12 +20,23 @@ export type Resolution =
   | { kind: "suggest"; item: ItemRef; score: number }
   | { kind: "new" };
 
+/** Significant words for matching — drop short size/qty tokens like "2l", "1", "kg". */
+function sigTokens(s: string): string[] {
+  return normalizeName(s).split(" ").filter((t) => t.length >= 3);
+}
+
 export function resolveItem(rawName: string, existing: ItemRef[], threshold = 0.82): Resolution {
   const norm = normalizeName(rawName);
   for (const e of existing) if (normalizeName(e.name) === norm) return { kind: "exact", item: e };
+  const newTokens = new Set(sigTokens(rawName));
   let best: ItemRef | null = null, bestScore = 0;
   for (const e of existing) {
-    const sc = ratio(norm, normalizeName(e.name));
+    const fuzzy = ratio(norm, normalizeName(e.name));
+    // Owner choice: prompt whenever names share a base word (a size/pack variant of the
+    // same product), not only for near-identical spellings. More shared words → stronger.
+    const shared = sigTokens(e.name).filter((t) => newTokens.has(t)).length;
+    const tokenScore = shared > 0 ? Math.min(0.99, 0.83 + 0.05 * shared) : 0;
+    const sc = Math.max(fuzzy, tokenScore);
     if (sc > bestScore) { bestScore = sc; best = e; }
   }
   if (best && bestScore >= threshold) return { kind: "suggest", item: best, score: bestScore };
