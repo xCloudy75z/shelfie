@@ -76,7 +76,7 @@ const TASKS=[
  {id:13,n:"Safety fixes (from code review)", d:"reject blank/zero price · fail-fast on missing session secret", s:"done"},
  {id:14,n:"Backup & Restore + version card", d:"safe import/export, snapshot+undo, last-backed-up nudge", s:"done"},
  {id:15,n:"Proper home-screen app icon", d:"PNG apple-touch-icon + maskable icons for real install", s:"done"},
- {id:16,n:"UX fixes: autocomplete + instant prices", d:"reliable mobile typeahead · price story loads on select", s:"active"}
+ {id:16,n:"UX fixes: autocomplete + instant prices", d:"reliable mobile typeahead · price story loads on select", s:"done"}
 ];
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
