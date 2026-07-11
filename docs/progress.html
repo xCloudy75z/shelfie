@@ -69,7 +69,7 @@ const TASKS=[
  {id:3, n:"Import + dedupe", d:"create items/purchases · fingerprint blocks double-imports", s:"done"},
  {id:4, n:"Review screen", d:"editable draft list, total-match badge, save the trip", s:"done"},
  {id:5, n:"Pay-cycle month (25th → 24th)", d:"budget & buckets follow the pay cycle, not the calendar", s:"done"},
- {id:6, n:"Fix: receipt read hang", d:"ship pdf.js cmaps/fonts for Arabic text + timeout so it never stalls", s:"active"}
+ {id:6, n:"Fix: receipt read hang", d:"ship pdf.js cmaps/fonts for Arabic text + timeout so it never stalls", s:"done"}
 ];
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
