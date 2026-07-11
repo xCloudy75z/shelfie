@@ -9,9 +9,17 @@
 // them locally with pdf.js, and only the reconstructed text lines are handed
 // back to the parser. Nothing is uploaded.
 
-import * as pdfjs from "pdfjs-dist";
+// Use pdf.js's LEGACY (compatibility) build in the browser.
+//
+// Evidence (iOS 18 Safari, main thread, latest build): the MODERN build hangs at
+// "opening document" — getDocument().promise never resolves — even with the
+// Web Worker disabled. The exact same code parses these receipts in ~2s under
+// Node, where pdf.js loads its `legacy` build. The legacy build is pdf.js's
+// documented choice for WebKit / embedded / older-runtime compatibility, so we
+// use it here to match the proven-working configuration.
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 // @ts-expect-error — the minified worker bundle ships no type declarations
-import { WorkerMessageHandler } from "pdfjs-dist/build/pdf.worker.min.mjs";
+import { WorkerMessageHandler } from "pdfjs-dist/legacy/build/pdf.worker.min.mjs";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
 
 // Run pdf.js ON THE MAIN THREAD — never spawn a Web Worker.
