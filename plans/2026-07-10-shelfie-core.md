@@ -830,3 +830,52 @@ export async function exportData() { /* Task 10 */ }
 - **Placeholder scan:** `exportData` is stubbed in T8 and implemented in T10 (cross-referenced), not a silent TODO. No other placeholders.
 - **Type consistency:** `PurchaseInput`/`Stats`/`Verdict` (T3), `Resolution` (T4), `hashPin/verifyPin/makeSession/readSession` (T6), `addPurchase` shape (T8) are used consistently across tasks.
 ```
+
+---
+
+## Task 11: Version stamp + one-tap Update + installable PWA (owner request 2026-07-11)
+
+**Goal:** The home-screen app always loads the latest deploy (no reinstall), shows a clear version timestamp, and offers a one-tap "Update" that force-checks the server and reloads.
+
+**Files:**
+- Modify: `next.config.mjs` (inject build id + build time), `app/(app)/month/page.tsx` (mount VersionBar)
+- Create: `app/version/route.ts`, `app/components/VersionBar.tsx`, `app/components/ServiceWorkerRegister.tsx`, `public/manifest.webmanifest`, `public/sw.js`; link manifest + register SW in `app/layout.tsx`.
+
+- [ ] **Step 1: Inject the build stamp.** In `next.config.mjs` add:
+```js
+env: {
+  NEXT_PUBLIC_BUILD_ID: (process.env.VERCEL_GIT_COMMIT_SHA || "dev").slice(0, 7),
+  NEXT_PUBLIC_BUILT_AT: new Date().toISOString(), // evaluated when `next build` runs
+},
+```
+
+- [ ] **Step 2: `/version` endpoint reflecting the DEPLOYED build.** `app/version/route.ts`:
+```ts
+export const dynamic = "force-dynamic";
+export async function GET() {
+  return Response.json(
+    { buildId: process.env.NEXT_PUBLIC_BUILD_ID, builtAt: process.env.NEXT_PUBLIC_BUILT_AT },
+    { headers: { "cache-control": "no-store" } },
+  );
+}
+```
+
+- [ ] **Step 3: `VersionBar.tsx` (client).** Shows `Version <NEXT_PUBLIC_BUILT_AT formatted in Asia/Dubai> · <NEXT_PUBLIC_BUILD_ID>` using the mono font. An **Update** button: `const r = await fetch("/version", { cache: "no-store" }).then(x=>x.json())`; if `r.buildId !== process.env.NEXT_PUBLIC_BUILD_ID` → set label "Update available — tap to reload", and on tap: if `navigator.serviceWorker` exists, `getRegistrations()` → `reg.update()`/`unregister()` then `location.reload()`; else `location.reload()`. If equal → transient "You're on the latest ✓". Format the timestamp with `Intl.DateTimeFormat("en-GB",{ timeZone:"Asia/Dubai", dateStyle:"medium", timeStyle:"short" })`.
+
+- [ ] **Step 4: `manifest.webmanifest`** in `public/`: name "Shelfie", short_name "Shelfie", `start_url:"/"`, `display:"standalone"`, `theme_color:"#1f9d57"`, `background_color:"#f4f1e8"`, at least one 512×512 maskable icon (generate a simple green 🛒 icon PNG or an inline SVG-based icon). Link it in `app/layout.tsx` (`<link rel="manifest" href="/manifest.webmanifest">`, `<meta name="theme-color">`, apple-touch-icon).
+
+- [ ] **Step 5: `public/sw.js` — network-first, never stale.**
+```js
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener("fetch", (e) => {
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+});
+```
+No precache of the app shell (avoids trapping an old version). `ServiceWorkerRegister.tsx` (client, mounted in `app/layout.tsx`, production-only) registers `/sw.js`.
+
+- [ ] **Step 6:** Mount `<VersionBar/>` at the bottom of the Month tab.
+
+- [ ] **Step 7: Verify** `npm run typecheck`, `npm test` (still green), `npm run build` (DB-free; `/version` route listed). Commit `feat: version stamp + one-tap update + installable PWA`.
+
+**Design intent:** network-first SW + `skipWaiting` means the installed shortcut always loads the newest deploy — add-to-home-screen once, updates forever. The stamp identifies the running version; the Update button is a guaranteed manual force. This fully covers the owner's request; deeper offline caching stays in Plan 3.
