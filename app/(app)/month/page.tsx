@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { formatAed, aedFromFils } from "@/lib/money";
-import { dubaiMonthKey, dubaiToday, monthKeyToLabel } from "@/lib/dates";
+import { dubaiMonthKey, dubaiToday, monthKeyToLabel, cycleRange } from "@/lib/dates";
 import { setBudget } from "@/app/actions/budget";
 import CategoryBars from "@/app/components/CategoryBars";
 import EditablePurchases, {
@@ -21,6 +21,15 @@ function shiftMonth(key: string, delta: number): string {
   const d = new Date(Date.UTC(y, m - 1 + delta, 1));
   const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
   return `${d.getUTCFullYear()}-${mm}`;
+}
+
+/** Format a "YYYY-MM-DD" cycle boundary as e.g. "25 Jun" (parsed as UTC to avoid TZ drift). */
+function formatCycleDay(iso: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${iso}T00:00:00Z`));
 }
 
 type Pace = {
@@ -83,16 +92,24 @@ export default async function MonthPage({
     purchasedAt: dubaiToday(p.purchasedAt),
   }));
 
+  // Pay-cycle range for the selected month (25th of prev month → 24th).
+  const range = cycleRange(selected);
+  const daysInCycle = range.days;
+
   // Pace — only computed when we have a target to divide by.
   let pace: Pace | null = null;
   if (targetFils && targetFils > 0) {
     let metric = spentFils / targetFils; // share of budget used
     let projectedFils = spentFils;
     if (isCurrent) {
-      const [yy, mm, dd] = dubaiToday(new Date()).split("-").map(Number);
-      const daysInMonth = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
-      const elapsed = dd / daysInMonth;
-      projectedFils = elapsed > 0 ? Math.round(spentFils / elapsed) : spentFils;
+      // Inclusive days from the cycle start to today (in Dubai), clamped so we
+      // never divide by zero or project past the end of the cycle.
+      const MS_PER_DAY = 24 * 60 * 60 * 1000;
+      const startMs = Date.parse(`${range.start}T00:00:00Z`);
+      const todayMs = Date.parse(`${dubaiToday(new Date())}T00:00:00Z`);
+      const rawElapsed = Math.round((todayMs - startMs) / MS_PER_DAY) + 1;
+      const daysElapsed = Math.min(Math.max(rawElapsed, 1), daysInCycle);
+      projectedFils = Math.round((spentFils / daysElapsed) * daysInCycle);
       metric = projectedFils / targetFils;
     }
 
@@ -157,9 +174,12 @@ export default async function MonthPage({
         >
           ‹
         </Link>
-        <strong style={{ minWidth: 130, textAlign: "center" }}>
-          {monthKeyToLabel(selected)}
-        </strong>
+        <div style={{ minWidth: 130, textAlign: "center" }}>
+          <strong style={{ display: "block" }}>{monthKeyToLabel(selected)}</strong>
+          <span style={{ fontSize: 12, color: "var(--ink-faint)" }}>
+            {formatCycleDay(range.start)} – {formatCycleDay(range.end)}
+          </span>
+        </div>
         <Link
           href={`/month?month=${shiftMonth(selected, 1)}`}
           aria-label="Next month"
