@@ -10,13 +10,29 @@
 // back to the parser. Nothing is uploaded.
 
 import * as pdfjs from "pdfjs-dist";
+// @ts-expect-error — the minified worker bundle ships no type declarations
+import { WorkerMessageHandler } from "pdfjs-dist/build/pdf.worker.min.mjs";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
 
-// Point pdf.js at its runtime assets, which are copied into /public/pdfjs by
-// scripts/copy-pdf-assets.mjs on every install. A plain static public path is
-// more reliable than the `new URL(..., import.meta.url)` bundler trick,
-// especially on mobile Safari.
-pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs";
+// Run pdf.js ON THE MAIN THREAD — never spawn a Web Worker.
+//
+// Root cause of the iOS receipt-import hang (verified against pdf.js source,
+// PDFWorker in pdfjs-dist): in the browser pdf.js spawns a module Web Worker and
+// waits for its "ready" message. On iOS Safari — inside our installed PWA — that
+// worker spawns but never signals ready, and pdf.js only falls back to the main
+// thread when the worker *errors*, NOT when it *hangs*. So getDocument() waited
+// forever (our 45s timeout fired). Node avoids this by running on the main
+// thread, which is exactly why the same code parses these receipts correctly
+// there.
+//
+// pdf.js uses its main-thread ("fake worker") path when
+// `globalThis.pdfjsWorker.WorkerMessageHandler` is present (see PDFWorker's
+// #mainThreadWorkerMessageHandler / _setupFakeWorkerGlobal). Pre-registering it
+// means no real Worker is ever created. Receipts are tiny (2–3 pages), so
+// main-thread extraction is fast and won't jank the UI.
+(
+  globalThis as unknown as { pdfjsWorker?: { WorkerMessageHandler: unknown } }
+).pdfjsWorker = { WorkerMessageHandler };
 
 // URLs (served from /public) for the CMap tables and standard-font data.
 // pdf.js needs the CMaps to decode Arabic / CID-keyed fonts; without them
