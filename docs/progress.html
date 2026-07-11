@@ -72,7 +72,9 @@ const TASKS=[
  {id:9, n:"Prices + Month tabs", d:"price story, verdict, budget, breakdown", s:"done"},
  {id:10,n:"Data export + deploy", d:"one-tap export, live on Vercel, verified", s:"done"},
  {id:11,n:"Auto-update + version stamp", d:"one-tap update, build timestamp, installable PWA", s:"done"},
- {id:12,n:"Edit / delete logged purchases", d:"fix price/qty/store/date, delete with confirm", s:"active"}
+ {id:12,n:"Edit / delete logged purchases", d:"fix price/qty/store/date, delete with confirm", s:"done"},
+ {id:13,n:"Safety fixes (from code review)", d:"reject blank/zero price · fail-fast on missing session secret", s:"active"},
+ {id:14,n:"Backup & Restore + version card", d:"safe import/export, snapshot+undo, last-backed-up nudge", s:"todo"}
 ];
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
