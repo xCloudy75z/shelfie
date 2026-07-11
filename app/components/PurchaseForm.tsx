@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type CSSProperties } from "react";
+import { useRef, useState, useTransition, type CSSProperties } from "react";
 import { addPurchase, type AddPurchaseResult } from "@/app/actions/purchases";
 import { parsePriceFils } from "@/lib/money";
 
@@ -68,6 +68,55 @@ export default function PurchaseForm({ items, categories }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  // --- Custom typeahead (replaces <datalist>, which is unreliable on iOS Safari) ---
+  const [showSug, setShowSug] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
+  const blurTimer = useRef<number | null>(null);
+
+  // Match existing item names: startsWith ranked before includes, cap at 6.
+  const query = itemName.trim().toLowerCase();
+  const suggestions =
+    query.length === 0
+      ? []
+      : (() => {
+          const starts: string[] = [];
+          const contains: string[] = [];
+          for (const name of items) {
+            const low = name.toLowerCase();
+            if (low === query) continue; // exact match: nothing left to suggest
+            if (low.startsWith(query)) starts.push(name);
+            else if (low.includes(query)) contains.push(name);
+          }
+          return [...starts, ...contains].slice(0, 6);
+        })();
+
+  const sugOpen = showSug && suggestions.length > 0;
+
+  function pickSuggestion(name: string) {
+    setItemName(name);
+    setShowSug(false);
+    setActiveIdx(-1);
+  }
+
+  function onItemKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      setShowSug(false);
+      setActiveIdx(-1);
+      return;
+    }
+    if (!sugOpen) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIdx((i) => (i + 1) % suggestions.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIdx((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+    } else if (e.key === "Enter" && activeIdx >= 0) {
+      e.preventDefault();
+      pickSuggestion(suggestions[activeIdx]);
+    }
+  }
 
   function clearForm() {
     setItemName("");
@@ -189,20 +238,80 @@ export default function PurchaseForm({ items, categories }: Props) {
         <label htmlFor="pf-item" style={s.label}>
           Item
         </label>
-        <input
-          id="pf-item"
-          list="pf-items"
-          value={itemName}
-          onChange={(e) => setItemName(e.target.value)}
-          placeholder="Start typing… e.g. Milk 2L"
-          autoComplete="off"
-          style={s.field}
-        />
-        <datalist id="pf-items">
-          {items.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
+        <div style={{ position: "relative" }}>
+          <input
+            id="pf-item"
+            value={itemName}
+            onChange={(e) => {
+              setItemName(e.target.value);
+              setShowSug(true);
+              setActiveIdx(-1);
+            }}
+            onFocus={() => setShowSug(true)}
+            onBlur={() => {
+              // Delay so a tap on a suggestion registers before the list closes.
+              blurTimer.current = window.setTimeout(() => setShowSug(false), 120);
+            }}
+            onKeyDown={onItemKeyDown}
+            placeholder="Start typing… e.g. Milk 2L"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            role="combobox"
+            aria-expanded={sugOpen}
+            aria-autocomplete="list"
+            aria-controls="pf-item-list"
+            style={s.field}
+          />
+          {sugOpen && (
+            <ul
+              id="pf-item-list"
+              role="listbox"
+              style={{
+                listStyle: "none",
+                margin: "6px 0 0",
+                padding: 4,
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                zIndex: 30,
+                background: "var(--card)",
+                border: "1px solid var(--line)",
+                borderRadius: 12,
+                boxShadow: "var(--shadow)",
+                maxHeight: 258,
+                overflowY: "auto",
+              }}
+            >
+              {suggestions.map((name, i) => (
+                <li
+                  key={name}
+                  role="option"
+                  aria-selected={i === activeIdx}
+                  // onMouseDown fires before the input's blur, so the pick lands.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    if (blurTimer.current) window.clearTimeout(blurTimer.current);
+                    pickSuggestion(name);
+                  }}
+                  onMouseEnter={() => setActiveIdx(i)}
+                  style={{
+                    padding: "11px 12px",
+                    borderRadius: 9,
+                    fontSize: 15,
+                    color: "var(--ink)",
+                    cursor: "pointer",
+                    background: i === activeIdx ? "var(--green-soft)" : "transparent",
+                  }}
+                >
+                  {name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <div style={s.row}>
           <div style={s.rowChild}>

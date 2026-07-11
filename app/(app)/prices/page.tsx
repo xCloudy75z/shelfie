@@ -3,6 +3,7 @@ import { formatAed } from "@/lib/money";
 import { computeStats, type PurchaseInput } from "@/lib/price-stats";
 import PriceCard from "@/app/components/PriceCard";
 import ShelfCheck from "@/app/components/ShelfCheck";
+import PriceItemPicker from "@/app/components/PriceItemPicker";
 
 // Reads are per-request against the DB — never at build time.
 export const dynamic = "force-dynamic";
@@ -27,17 +28,6 @@ function primaryUnit(purchases: { unit: string }[]): string {
   }
   return best;
 }
-
-const selectStyle = {
-  width: "100%",
-  padding: "13px 14px",
-  border: "1px solid var(--line)",
-  borderRadius: 12,
-  fontSize: 16,
-  background: "var(--card)",
-  color: "var(--ink)",
-  fontFamily: "inherit",
-};
 
 export default async function PricesPage({
   searchParams,
@@ -103,32 +93,8 @@ export default async function PricesPage({
       <h1 className="app-title">Prices</h1>
       <p className="app-sub">At the shelf — is this a good price?</p>
 
-      {/* Item picker — a plain GET form so it works without client JS. */}
-      <form method="get" style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-        <select name="item" defaultValue={selectedId} style={selectStyle}>
-          {items.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          style={{
-            flex: "0 0 auto",
-            border: 0,
-            borderRadius: 14,
-            padding: "13px 18px",
-            fontSize: 16,
-            fontWeight: 700,
-            background: "var(--green-soft)",
-            color: "var(--green-strong)",
-            cursor: "pointer",
-          }}
-        >
-          Show
-        </button>
-      </form>
+      {/* Item picker — selecting an item loads its price story instantly. */}
+      <PriceItemPicker items={items} selectedId={selectedId} />
 
       {stats ? (
         <>
