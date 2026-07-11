@@ -5,7 +5,52 @@ import { db } from "@/lib/db";
 import { normalizeName, resolveItem } from "@/lib/items";
 import { dubaiMonthKey } from "@/lib/dates";
 import { guessCategory } from "@/lib/categories";
-import { type DraftItem } from "@/lib/receipt";
+import { parseReceipt, type DraftItem, type ParsedReceipt } from "@/lib/receipt";
+
+// Cap on the uploaded PDF size. Carrefour receipts are a few hundred KB; 10MB
+// is a generous ceiling that still refuses anything that isn't a small receipt.
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+export type ParseReceiptUploadResult =
+  | { ok: true; parsed: ParsedReceipt }
+  | { error: string };
+
+/**
+ * Read an uploaded Carrefour receipt PDF on the server and return the parsed
+ * items for the user to review. Extraction runs in Node (main-thread pdf.js),
+ * which is reliable where the iOS-Safari browser path hangs.
+ *
+ * Stores NOTHING: the PDF buffer is discarded when this function returns. The
+ * separate `importReceipt` action does the actual saving after the user reviews.
+ */
+export async function parseReceiptUpload(
+  formData: FormData,
+): Promise<ParseReceiptUploadResult> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "No file received — please pick your Carrefour receipt PDF." };
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return { error: "That file is too large — receipts are only a few hundred KB." };
+  }
+
+  const buf = new Uint8Array(await file.arrayBuffer());
+
+  let lines: string[];
+  try {
+    // Dynamic import keeps pdfjs-dist out of any bundle that doesn't need it and
+    // loads it only from node_modules inside the serverless function.
+    const { extractReceiptLinesServer } = await import(
+      "@/lib/receipt-extract-server"
+    );
+    lines = await extractReceiptLinesServer(buf);
+  } catch {
+    return { error: "Couldn't read that PDF — is it the Carrefour receipt?" };
+  }
+
+  const parsed = parseReceipt(lines);
+  return { ok: true, parsed };
+}
 
 export type ImportReceiptInput = {
   items: DraftItem[];
