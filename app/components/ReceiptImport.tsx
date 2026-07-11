@@ -30,6 +30,37 @@ import { guessCategory, PRESET_CATEGORIES } from "@/lib/categories";
 
 type Phase = "idle" | "reading" | "review" | "saving" | "done" | "error";
 
+// A self-describing failure snapshot the owner can screenshot for us. It holds
+// only product/price lines and non-personal environment hints — never receipt
+// personal data.
+type Diagnostics =
+  // Extraction succeeded but the parser found nothing.
+  | {
+      kind: "parse";
+      lineCount: number;
+      sampleLines: string[]; // first 12 lines, each truncated for display
+    }
+  // Extraction threw — carries the stage-tagged error message.
+  | {
+      kind: "read";
+      errorMessage: string;
+    };
+
+const DIAG_MAX_LINES = 12;
+const DIAG_LINE_CHARS = 120;
+
+// Small, non-personal environment hints that help us tell iOS Safari / version
+// apart when reproducing a read failure.
+function envHints(): { serviceWorker: boolean; userAgent: string } {
+  if (typeof navigator === "undefined") {
+    return { serviceWorker: false, userAgent: "unknown" };
+  }
+  return {
+    serviceWorker: "serviceWorker" in navigator,
+    userAgent: (navigator.userAgent || "unknown").slice(0, 120),
+  };
+}
+
 // An editable review row. Price is held as a free-text AED string so the user
 // can type; it is validated → fils only at save time.
 type Row = {
@@ -109,6 +140,10 @@ export default function ReceiptImport() {
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Self-describing failure detail so the owner can screenshot the reason.
+  // kind === "parse": we read the file but found no items (show extracted lines).
+  // kind === "read":  extraction threw (show the tagged error message).
+  const [diag, setDiag] = useState<Diagnostics | null>(null);
 
   // Parsed snapshot (badge + discount note read from the ORIGINAL parse).
   const [parsed, setParsed] = useState<ParsedReceipt | null>(null);
@@ -136,6 +171,7 @@ export default function ReceiptImport() {
     setSaveError(null);
     setDupWhen(null);
     setErrorMsg(null);
+    setDiag(null);
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -148,15 +184,23 @@ export default function ReceiptImport() {
 
     setPhase("reading");
     setErrorMsg(null);
+    setDiag(null);
     try {
       // Dynamic import keeps pdfjs-dist out of every server bundle.
       const { extractReceiptLines } = await import("@/lib/receipt-extract");
       const lines = await extractReceiptLines(file);
       const p = parseReceipt(lines);
       if (p.items.length === 0) {
-        setErrorMsg(
-          "No grocery items were recognised — is this the Carrefour receipt PDF?",
-        );
+        // Extraction succeeded (we may even have text) but nothing parsed as an
+        // item. Surface the extracted lines so we can match the parser.
+        setErrorMsg("Read the file, but couldn't find any items");
+        setDiag({
+          kind: "parse",
+          lineCount: lines.length,
+          sampleLines: lines
+            .slice(0, DIAG_MAX_LINES)
+            .map((l) => l.slice(0, DIAG_LINE_CHARS)),
+        });
         setPhase("error");
         return;
       }
@@ -174,8 +218,13 @@ export default function ReceiptImport() {
       setSaveError(null);
       setDupWhen(null);
       setPhase("review");
-    } catch {
-      setErrorMsg("Couldn't read that file — is it the Carrefour PDF?");
+    } catch (e) {
+      // Extraction threw. The message now carries a stage tag
+      // (OPEN_FAILED: / TIMEOUT: ...) added in lib/receipt-extract.ts.
+      const message =
+        e instanceof Error ? e.message : typeof e === "string" ? e : String(e);
+      setErrorMsg("Couldn't read that file");
+      setDiag({ kind: "read", errorMessage: message });
       setPhase("error");
     }
   }
@@ -313,6 +362,7 @@ export default function ReceiptImport() {
 
   // --- Error ------------------------------------------------------------------
   if (phase === "error") {
+    const isParse = diag?.kind === "parse";
     return (
       <div className="card">
         <p style={{ fontSize: 32, margin: "0 0 8px" }}>😕</p>
@@ -320,9 +370,18 @@ export default function ReceiptImport() {
           {errorMsg ?? "Something went wrong."}
         </p>
         <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "0 0 16px" }}>
-          Make sure you picked the PDF Carrefour emails you.
+          {isParse
+            ? "The file opened fine, but none of its lines looked like grocery items."
+            : "Make sure you picked the PDF Carrefour emails you."}
         </p>
-        <button type="button" onClick={reset} style={s.primaryBtn}>
+
+        {diag && <DiagnosticsPanel diag={diag} />}
+
+        <button
+          type="button"
+          onClick={reset}
+          style={{ ...s.primaryBtn, marginTop: diag ? 14 : 0 }}
+        >
           Try another file
         </button>
       </div>
@@ -597,6 +656,77 @@ function formatWhen(iso: string): string {
     year: "numeric",
     timeZone: "Asia/Dubai",
   });
+}
+
+// Subtle, muted, monospace "Diagnostics" box the owner can screenshot for us.
+// Default-open on failure so the reason is visible without a tap. Everything
+// shown here is product/price text or non-personal environment hints.
+function DiagnosticsPanel({ diag }: { diag: Diagnostics }) {
+  const env = envHints();
+  return (
+    <details
+      open
+      style={{
+        border: "1px solid var(--line)",
+        borderRadius: 10,
+        background: "var(--card-2)",
+        padding: "8px 10px",
+        marginTop: 4,
+        textAlign: "left",
+      }}
+    >
+      <summary
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "var(--ink-soft)",
+          cursor: "pointer",
+        }}
+      >
+        Diagnostics
+      </summary>
+
+      <p
+        style={{
+          fontSize: 11.5,
+          color: "var(--ink-soft)",
+          margin: "8px 0",
+        }}
+      >
+        Screenshot this and send it to me — these are product/price lines,
+        nothing personal. It lets me match the parser to your receipt.
+      </p>
+
+      <pre
+        className="mono"
+        style={{
+          fontSize: 11,
+          lineHeight: 1.5,
+          color: "var(--ink-faint)",
+          background: "var(--card)",
+          border: "1px solid var(--line)",
+          borderRadius: 8,
+          padding: "8px 10px",
+          margin: 0,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          overflowX: "auto",
+        }}
+      >
+        {diag.kind === "read"
+          ? `error: ${diag.errorMessage}`
+          : [
+              `lines: ${diag.lineCount}`,
+              "",
+              ...diag.sampleLines.map((l, i) => `${i + 1}. ${l}`),
+            ].join("\n")}
+        {"\n"}
+        {`serviceWorker: ${env.serviceWorker}`}
+        {"\n"}
+        {`userAgent: ${env.userAgent}`}
+      </pre>
+    </details>
+  );
 }
 
 function Toast({ msg }: { msg: string }) {

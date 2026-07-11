@@ -54,7 +54,10 @@ export async function extractReceiptLines(file: File): Promise<string[]> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(
-      () => reject(new Error("Reading the PDF timed out. Please try again.")),
+      () =>
+        reject(
+          new Error("TIMEOUT: Reading the PDF timed out. Please try again."),
+        ),
       EXTRACT_TIMEOUT_MS,
     );
   });
@@ -73,7 +76,18 @@ async function extract(buf: ArrayBuffer): Promise<string[]> {
     cMapPacked: true,
     standardFontDataUrl: STANDARD_FONT_DATA_URL,
   });
-  const doc = await loadingTask.promise;
+
+  // Stage 1 — open the document. If pdf.js can't even parse the file header
+  // (not a PDF, corrupt bytes, password-protected), tag the failure so the UI
+  // can surface *which* stage broke rather than a generic error.
+  let doc: Awaited<typeof loadingTask.promise>;
+  try {
+    doc = await loadingTask.promise;
+  } catch (e) {
+    const msg =
+      e instanceof Error ? e.message : typeof e === "string" ? e : String(e);
+    throw new Error("OPEN_FAILED: " + msg);
+  }
 
   const lines: string[] = [];
 
