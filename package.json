@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "vercel-build": "prisma migrate deploy && tsx prisma/seed.ts && next build",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && node scripts/copy-pdf-assets.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --passWithNoTests",

@@ -31,3 +31,6 @@ Thumbs.db
 # === Scratch ===
 tmp/
 scratch/
+
+# === pdf.js runtime assets (regenerated per-install by scripts/copy-pdf-assets.mjs) ===
+/public/pdfjs
