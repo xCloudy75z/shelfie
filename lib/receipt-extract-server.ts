@@ -14,8 +14,69 @@
 // The uploaded PDF bytes are handed in, extracted, and discarded by the caller
 // when the request returns. This module never logs file contents.
 
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
+
+// pdf.js v6's Node build references DOMMatrix (and Path2D) at MODULE-LOAD time
+// (`const SCALE_MATRIX = new DOMMatrix()`), pulling them from the optional
+// native package @napi-rs/canvas. That package is present in local dev but is
+// NOT reliably included in Vercel's serverless function, so importing pdf.js
+// there throws "ReferenceError: DOMMatrix is not defined" before a single byte
+// of the receipt is read.
+//
+// Receipt TEXT extraction never does any of the matrix/drawing math these
+// globals are for — they only need to EXIST so the module can load. So we
+// provide tiny, dependency-free pure-JS shims and install them BEFORE pdf.js is
+// imported. Verified: with the native package hidden (i.e. Vercel's condition)
+// this shim yields the exact same, correct text extraction. Only installed when
+// the globals are absent, so a real DOMMatrix (browser/native) always wins.
+function installPdfGlobals(): void {
+  const g = globalThis as Record<string, unknown>;
+
+  if (typeof g.DOMMatrix === "undefined") {
+    class DOMMatrixShim {
+      a = 1; b = 0; c = 0; d = 1; e = 0; f = 0;
+      constructor(init?: number[]) {
+        if (Array.isArray(init) && init.length === 6) {
+          [this.a, this.b, this.c, this.d, this.e, this.f] = init;
+        }
+      }
+      multiply(o: DOMMatrixShim): DOMMatrixShim {
+        const r = new DOMMatrixShim();
+        r.a = this.a * o.a + this.c * o.b;
+        r.b = this.b * o.a + this.d * o.b;
+        r.c = this.a * o.c + this.c * o.d;
+        r.d = this.b * o.c + this.d * o.d;
+        r.e = this.a * o.e + this.c * o.f + this.e;
+        r.f = this.b * o.e + this.d * o.f + this.f;
+        return r;
+      }
+      translate(tx = 0, ty = 0): DOMMatrixShim {
+        return this.multiply(Object.assign(new DOMMatrixShim(), { e: tx, f: ty }));
+      }
+      scale(sx = 1, sy = sx): DOMMatrixShim {
+        return this.multiply(Object.assign(new DOMMatrixShim(), { a: sx, d: sy }));
+      }
+    }
+    g.DOMMatrix = DOMMatrixShim;
+  }
+
+  if (typeof g.Path2D === "undefined") {
+    g.Path2D = class Path2DShim {
+      addPath(): void {}
+      moveTo(): void {}
+      lineTo(): void {}
+      bezierCurveTo(): void {}
+      quadraticCurveTo(): void {}
+      closePath(): void {}
+      rect(): void {}
+    };
+  }
+}
+
+// pdf.js is imported dynamically (below, inside extract) so the shims above are
+// guaranteed installed before pdf.js's module-load code runs. A static top-level
+// import would be hoisted ahead of installPdfGlobals() and defeat the purpose.
+type PdfjsModule = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
 
 // Rows whose baseline y-coordinates fall within this many PDF units are treated
 // as the same visual line. Receipt rows are well separated, so a 2-unit bucket
@@ -61,6 +122,12 @@ export async function extractReceiptLinesServer(
 }
 
 async function extract(data: Uint8Array): Promise<string[]> {
+  // Install DOMMatrix/Path2D shims, THEN load pdf.js (order matters — see the
+  // note above installPdfGlobals). The dynamic import is cached by the ESM
+  // loader, so repeated extractions don't re-parse pdf.js.
+  installPdfGlobals();
+  const pdfjs: PdfjsModule = await import("pdfjs-dist/legacy/build/pdf.mjs");
+
   // This exact config is the proven-working one: in Node pdf.js runs on the
   // main thread, and useSystemFonts:true decodes fonts without needing the
   // shipped cmap/standard-font assets.
