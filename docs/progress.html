@@ -70,7 +70,7 @@ const TASKS=[
  {id:4, n:"Review screen", d:"editable draft list, total-match badge, save the trip", s:"done"},
  {id:5, n:"Pay-cycle month (25th → 24th)", d:"budget & buckets follow the pay cycle, not the calendar", s:"done"},
  {id:6, n:"Fix: receipt read hang", d:"ship pdf.js cmaps/fonts for Arabic text + timeout so it never stalls", s:"done"},
- {id:7, n:"Import diagnostics", d:"show exactly what the phone read, to pinpoint the 'couldn't read' failure", s:"active"}
+ {id:7, n:"Import diagnostics", d:"show exactly what the phone read, to pinpoint the 'couldn't read' failure", s:"done"}
 ];
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
