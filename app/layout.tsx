@@ -26,8 +26,13 @@ export const metadata: Metadata = {
   description: "Log a grocery purchase, see each item's price story, and watch the month against a budget.",
   manifest: "/manifest.webmanifest",
   icons: {
-    apple: "/icon.svg",
-    icon: "/icon.svg",
+    icon: "/icon-512.png",
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Shelfie",
+    statusBarStyle: "black-translucent",
   },
 };
 

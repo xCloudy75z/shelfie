@@ -1,10 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Shelfie">
-  <!-- Full-bleed green so the icon works as a maskable icon (safe zone = centre 80%). -->
-  <rect width="512" height="512" rx="112" fill="#1f9d57"/>
-  <!-- White shopping-cart glyph, centred. -->
-  <g fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M136 150 h44 l40 156 h132 l38 -110 H196"/>
-    <circle cx="228" cy="366" r="20" fill="#ffffff" stroke="none"/>
-    <circle cx="336" cy="366" r="20" fill="#ffffff" stroke="none"/>
+  <!-- Solid full-bleed fresh-green background. No transparency, no rounded
+       corners: iOS/Android mask the corners themselves. -->
+  <rect width="512" height="512" fill="#1f9d57"/>
+  <!-- Bold, centred white shopping-cart glyph. Body drawn as one continuous
+       stroked path (handle -> basket) with two solid wheels beneath. -->
+  <g fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M96 138 h46 l42 196 a24 24 0 0 0 23 18 h146 a24 24 0 0 0 23 -17 l36 -136 H176"/>
   </g>
+  <circle cx="214" cy="398" r="25" fill="#ffffff"/>
+  <circle cx="366" cy="398" r="25" fill="#ffffff"/>
 </svg>
