@@ -128,6 +128,20 @@ async function extract(data: Uint8Array): Promise<string[]> {
   installPdfGlobals();
   const pdfjs: PdfjsModule = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
+  // Pre-load pdf.js's worker on the main thread. In Node, pdf.js runs the worker
+  // in-process, but by default it fetches the handler via
+  //   await import(/* webpackIgnore */ "./pdf.worker.mjs")
+  // — that ignore hint makes the bundler SKIP the file, so it's absent on
+  // Vercel's serverless function ("Setting up fake worker failed: Cannot find
+  // module …/pdf.worker.mjs"). Importing it here with a plain literal specifier
+  // forces the bundler to include it, and assigning globalThis.pdfjsWorker makes
+  // pdf.js use it directly, never taking the broken dynamic-import path (see
+  // PDFWorker.#mainThreadWorkerMessageHandler / _setupFakeWorkerGlobal in pdf.mjs).
+  const g = globalThis as Record<string, unknown>;
+  if (!g.pdfjsWorker) {
+    g.pdfjsWorker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+  }
+
   // This exact config is the proven-working one: in Node pdf.js runs on the
   // main thread, and useSystemFonts:true decodes fonts without needing the
   // shipped cmap/standard-font assets.
