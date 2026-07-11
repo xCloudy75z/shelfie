@@ -15,13 +15,15 @@
   .nav{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
   .nav a{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;text-decoration:none;color:var(--green-strong);font-weight:700;font-size:14px}
   h1{font-size:clamp(32px,6vw,46px);margin:6px 0 4px}
-  .sub{color:var(--ink-soft);font-size:16px;margin:0 0 22px}
+  .sub{color:var(--ink-soft);font-size:16px;margin:0 0 18px}
+  .done-banner{display:flex;align-items:center;gap:10px;background:var(--green-soft);border:1px solid color-mix(in srgb,var(--green) 30%,var(--line));
+    border-radius:14px;padding:12px 16px;margin-bottom:16px;color:var(--green-strong);font-weight:600;font-size:14.5px}
+  .done-banner a{color:var(--green-strong);font-weight:800}
   .barwrap{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:8px}
   .barwrap .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
   .barwrap .pct{font-family:var(--font-display);font-size:30px;font-weight:600}
   .bar{height:12px;border-radius:999px;background:var(--line-soft);overflow:hidden}
   .bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--green),var(--green-strong));transition:width .5s}
-  .phase{font-size:13px;color:var(--ink-faint);margin:22px 2px 8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
   .task{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);
     border-radius:14px;padding:14px 16px;margin:8px 0;box-shadow:var(--shadow-sm)}
   .task .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;flex:none;font-weight:800}
@@ -45,38 +47,27 @@
   <div class="wrap">
     <div class="nav"><a href="index.html">← Hub</a><a href="spec.html">Spec</a><a href="review.html">🛡️ Review</a><a href="mockup.html">📱 Mockup</a></div>
     <h1>Build Progress</h1>
-    <p class="sub">Core — Plan 1 of 3. <span class="live"><i></i>live · auto-refreshes every 60s</span></p>
+    <p class="sub">Plan 2 · Carrefour receipt import. <span class="live"><i></i>live · auto-refreshes every 60s</span></p>
+
+    <div class="done-banner">✅ Plan 1 — the Core: all 16 tasks shipped &amp; live at <a href="https://shelfie-gamma-seven.vercel.app" target="_blank">shelfie-gamma-seven.vercel.app</a></div>
 
     <div class="barwrap">
-      <div class="top"><span style="font-weight:700">Deployable core</span><span class="pct" id="pct">0%</span></div>
+      <div class="top"><span style="font-weight:700">Receipt import (Plan 2)</span><span class="pct" id="pct">0%</span></div>
       <div class="bar"><i id="fill" style="width:0%"></i></div>
       <div id="count" style="color:var(--ink-soft);font-size:13px;margin-top:8px"></div>
     </div>
 
     <div id="list"></div>
 
-    <p class="foot">Each task is built test-first by a fresh Opus agent, then passes a spec-compliance review and a code-quality review before it turns green.<br>Next: parser (Plan 2) → polish (Plan 3).</p>
+    <p class="foot">Upload the emailed Carrefour PDF → parsed on your device → review → save the whole trip.<br>Built test-first by fresh Opus agents; the real layout was confirmed from two of your actual receipts (privacy-safe).</p>
   </div>
 
 <script>
 const TASKS=[
- {id:0, n:"Scaffold Next.js app", d:"Next 15 + TS + Tailwind + Vitest", s:"done"},
- {id:1, n:"Money utilities", d:"fils ⇄ AED, no rounding drift", s:"done"},
- {id:2, n:"Dubai-time date bucketing", d:"correct month across midnight (+4)", s:"done"},
- {id:3, n:"Price stats + shelf verdict", d:"unit-price math, offers excluded, min-sample", s:"done"},
- {id:4, n:"Item name resolution", d:"exact / suggest / new — keep identity clean", s:"done"},
- {id:5, n:"Database schema + seed", d:"6 tables on Neon Postgres", s:"done"},
- {id:6, n:"PIN auth", d:"hash + throttle + httpOnly session", s:"done"},
- {id:7, n:"App shell + tab bar", d:"Log / Prices / Month, theme toggle", s:"done"},
- {id:8, n:"Log tab — manual entry", d:"add purchase + item-identity confirm", s:"done"},
- {id:9, n:"Prices + Month tabs", d:"price story, verdict, budget, breakdown", s:"done"},
- {id:10,n:"Data export + deploy", d:"one-tap export, live on Vercel, verified", s:"done"},
- {id:11,n:"Auto-update + version stamp", d:"one-tap update, build timestamp, installable PWA", s:"done"},
- {id:12,n:"Edit / delete logged purchases", d:"fix price/qty/store/date, delete with confirm", s:"done"},
- {id:13,n:"Safety fixes (from code review)", d:"reject blank/zero price · fail-fast on missing session secret", s:"done"},
- {id:14,n:"Backup & Restore + version card", d:"safe import/export, snapshot+undo, last-backed-up nudge", s:"done"},
- {id:15,n:"Proper home-screen app icon", d:"PNG apple-touch-icon + maskable icons for real install", s:"done"},
- {id:16,n:"UX fixes: autocomplete + instant prices", d:"reliable mobile typeahead · price story loads on select", s:"done"}
+ {id:1, n:"Receipt parser", d:"lines → items · qty · unit price · line total; grand-total self-check", s:"active"},
+ {id:2, n:"On-device PDF read", d:"pdf.js coordinate extraction — receipt never leaves your phone", s:"todo"},
+ {id:3, n:"Import + dedupe", d:"create items/purchases · fingerprint blocks double-imports", s:"todo"},
+ {id:4, n:"Review screen", d:"editable draft list, total-match badge, save the trip", s:"todo"}
 ];
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
