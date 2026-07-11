@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { parsePriceFils, aedFromFils } from "@/lib/money";
+import { parsePriceFils } from "@/lib/money";
 import { normalizeName, resolveItem } from "@/lib/items";
 import { dubaiMonthKey } from "@/lib/dates";
 import { guessCategory } from "@/lib/categories";
@@ -154,63 +154,4 @@ export async function deletePurchase(id: string): Promise<{ ok: true }> {
   return { ok: true };
 }
 
-export type ExportedData = {
-  exportedAt: string;
-  items: { id: string; name: string; category: string | null }[];
-  purchases: {
-    item: string;
-    totalFils: number;
-    totalAed: number;
-    quantity: number;
-    unit: string;
-    store: string;
-    onOffer: boolean;
-    purchasedAt: string;
-    monthKey: string;
-  }[];
-  budgets: { monthKey: string; amountFils: number; amountAed: number }[];
-};
-
-/**
- * A full, plain-JSON snapshot of the user's data — items, every purchase (money
- * shown in both integer fils and AED), and budgets. The client turns this into a
- * downloadable file so nothing is locked inside the app.
- */
-export async function exportData(): Promise<ExportedData> {
-  const [items, purchases, budgets] = await Promise.all([
-    db.item.findMany({
-      include: { category: true },
-      orderBy: { name: "asc" },
-    }),
-    db.purchase.findMany({
-      include: { item: true },
-      orderBy: { purchasedAt: "desc" },
-    }),
-    db.budget.findMany({ orderBy: { monthKey: "asc" } }),
-  ]);
-
-  return {
-    exportedAt: new Date().toISOString(),
-    items: items.map((i) => ({
-      id: i.id,
-      name: i.name,
-      category: i.category?.name ?? null,
-    })),
-    purchases: purchases.map((p) => ({
-      item: p.item.name,
-      totalFils: p.totalFils,
-      totalAed: aedFromFils(p.totalFils),
-      quantity: p.quantity,
-      unit: p.unit,
-      store: p.store,
-      onOffer: p.onOffer,
-      purchasedAt: p.purchasedAt.toISOString(),
-      monthKey: p.monthKey,
-    })),
-    budgets: budgets.map((b) => ({
-      monthKey: b.monthKey,
-      amountFils: b.amountFils,
-      amountAed: aedFromFils(b.amountFils),
-    })),
-  };
-}
+// (exportData + ExportedData removed — replaced by the validated Backup & Restore in app/actions/backup.ts)
