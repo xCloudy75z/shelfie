@@ -62,30 +62,45 @@ const ROW_BUCKET = 2;
  * picked something that is not a PDF — so the calling UI can show a friendly
  * error.
  */
+/**
+ * "function" when the main-thread worker handler loaded (the iOS worker-hang fix
+ * is active); "undefined" if it somehow didn't. Surfaced in the import
+ * diagnostics so a failure tells us whether the fix is even in effect.
+ */
+export const PDF_WORKER_HANDLER_TYPE: string = typeof WorkerMessageHandler;
+
 export async function extractReceiptLines(file: File): Promise<string[]> {
   const buf = await file.arrayBuffer();
 
-  // Race the extraction against a timeout so a stalled read (e.g. a missing
-  // font asset) surfaces as a friendly error instead of an infinite spinner.
+  // Track how far extraction gets so a stall reports WHERE it stalled (opening
+  // the document vs reading a page's text) instead of a generic timeout.
+  const progress = { stage: "starting" };
+
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(
       () =>
         reject(
-          new Error("TIMEOUT: Reading the PDF timed out. Please try again."),
+          new Error(
+            `TIMEOUT: stalled at [${progress.stage}] after ${EXTRACT_TIMEOUT_MS / 1000}s`,
+          ),
         ),
       EXTRACT_TIMEOUT_MS,
     );
   });
 
   try {
-    return await Promise.race([extract(buf), timeout]);
+    return await Promise.race([extract(buf, progress), timeout]);
   } finally {
     if (timer) clearTimeout(timer);
   }
 }
 
-async function extract(buf: ArrayBuffer): Promise<string[]> {
+async function extract(
+  buf: ArrayBuffer,
+  progress: { stage: string },
+): Promise<string[]> {
+  progress.stage = "opening document";
   const loadingTask = pdfjs.getDocument({
     data: buf,
     cMapUrl: CMAP_URL,
@@ -105,12 +120,15 @@ async function extract(buf: ArrayBuffer): Promise<string[]> {
     throw new Error("OPEN_FAILED: " + msg);
   }
 
+  progress.stage = `opened (${doc.numPages} pages)`;
   const lines: string[] = [];
 
   try {
     for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
+      progress.stage = `page ${pageNum}/${doc.numPages}: get text`;
       const page = await doc.getPage(pageNum);
       const tc = await page.getTextContent();
+      progress.stage = `page ${pageNum}/${doc.numPages}: grouping`;
 
       // Bucket text items into rows keyed by rounded baseline y.
       const rows = new Map<number, { x: number; str: string }[]>();

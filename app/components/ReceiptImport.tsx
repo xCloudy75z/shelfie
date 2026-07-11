@@ -144,6 +144,9 @@ export default function ReceiptImport() {
   // kind === "parse": we read the file but found no items (show extracted lines).
   // kind === "read":  extraction threw (show the tagged error message).
   const [diag, setDiag] = useState<Diagnostics | null>(null);
+  // Whether the pdf.js main-thread handler loaded (the iOS worker-hang fix).
+  // "function" = fix active; "undefined" = not. Shown in the diagnostics panel.
+  const [handlerType, setHandlerType] = useState<string>("?");
 
   // Parsed snapshot (badge + discount note read from the ORIGINAL parse).
   const [parsed, setParsed] = useState<ParsedReceipt | null>(null);
@@ -187,8 +190,10 @@ export default function ReceiptImport() {
     setDiag(null);
     try {
       // Dynamic import keeps pdfjs-dist out of every server bundle.
-      const { extractReceiptLines } = await import("@/lib/receipt-extract");
-      const lines = await extractReceiptLines(file);
+      const mod = await import("@/lib/receipt-extract");
+      // Record whether the main-thread worker handler is in effect (for diagnostics).
+      setHandlerType(mod.PDF_WORKER_HANDLER_TYPE);
+      const lines = await mod.extractReceiptLines(file);
       const p = parseReceipt(lines);
       if (p.items.length === 0) {
         // Extraction succeeded (we may even have text) but nothing parsed as an
@@ -375,7 +380,7 @@ export default function ReceiptImport() {
             : "Make sure you picked the PDF Carrefour emails you."}
         </p>
 
-        {diag && <DiagnosticsPanel diag={diag} />}
+        {diag && <DiagnosticsPanel diag={diag} handlerType={handlerType} />}
 
         <button
           type="button"
@@ -661,8 +666,15 @@ function formatWhen(iso: string): string {
 // Subtle, muted, monospace "Diagnostics" box the owner can screenshot for us.
 // Default-open on failure so the reason is visible without a tap. Everything
 // shown here is product/price text or non-personal environment hints.
-function DiagnosticsPanel({ diag }: { diag: Diagnostics }) {
+function DiagnosticsPanel({
+  diag,
+  handlerType,
+}: {
+  diag: Diagnostics;
+  handlerType: string;
+}) {
   const env = envHints();
+  const build = process.env.NEXT_PUBLIC_BUILD_ID ?? "?";
   return (
     <details
       open
@@ -720,6 +732,10 @@ function DiagnosticsPanel({ diag }: { diag: Diagnostics }) {
               "",
               ...diag.sampleLines.map((l, i) => `${i + 1}. ${l}`),
             ].join("\n")}
+        {"\n"}
+        {`build: ${build}`}
+        {"\n"}
+        {`pdfHandler: ${handlerType}`}
         {"\n"}
         {`serviceWorker: ${env.serviceWorker}`}
         {"\n"}
