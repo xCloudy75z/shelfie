@@ -4,6 +4,7 @@ import { computeStats, type PurchaseInput } from "@/lib/price-stats";
 import PriceCard from "@/app/components/PriceCard";
 import ShelfCheck from "@/app/components/ShelfCheck";
 import PriceItemPicker from "@/app/components/PriceItemPicker";
+import BarcodeLine from "@/app/components/BarcodeLine";
 
 // Reads are per-request against the DB — never at build time.
 export const dynamic = "force-dynamic";
@@ -73,10 +74,14 @@ export default async function PricesPage({
 
   const selected = await db.item.findUnique({
     where: { id: selectedId },
-    include: { purchases: { orderBy: { purchasedAt: "desc" } } },
+    include: {
+      purchases: { orderBy: { purchasedAt: "desc" } },
+      barcodes: { select: { code: true }, orderBy: { createdAt: "asc" } },
+    },
   });
 
   const purchases = selected?.purchases ?? [];
+  const barcodeCodes = (selected?.barcodes ?? []).map((b) => b.code);
   const unit = primaryUnit(purchases);
   const inputs: PurchaseInput[] = purchases.map((p) => ({
     totalFils: p.totalFils,
@@ -95,6 +100,10 @@ export default async function PricesPage({
 
       {/* Item picker — selecting an item loads its price story instantly. */}
       <PriceItemPicker items={items} selectedId={selectedId} />
+
+      {/* Item identity — shows regardless of whether the item has purchases yet
+          (barcode-only items are deliberately kept — break-spec F2). */}
+      <BarcodeLine codes={barcodeCodes} />
 
       {stats ? (
         <>
