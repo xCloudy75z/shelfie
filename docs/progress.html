@@ -128,14 +128,21 @@ const PHASES=[
   steps:[
     {n:"Design approved", s:"done"},
     {n:"Spec + published", s:"done"},
-    {n:"Break the spec", s:"active"},
-    {n:"Plan (TDD)", s:"todo"},
+    {n:"Break the spec", s:"done"},
+    {n:"Plan (TDD)", s:"active"},
     {n:"Break the plan", s:"todo"},
     {n:"Build", s:"todo"},
     {n:"Break the build", s:"todo"},
     {n:"Live verify", s:"todo"}
   ],
-  breaks:[]},
+  breaks:[
+    {stage:"🛡️ Break the SPEC", verdict:"4 Major + fixes folded in", items:[
+      "F1 (Major): storing the discount by month on the receipt broke as soon as you delete an imported item (the discount lingered → wrong total). Fixed: work the discount out from the live items instead.",
+      "F2 (Major): a restore could leave a ‘phantom’ discount behind — now cleaned up on restore.",
+      "F3 (Major): a hidden 3rd place using the old category default would have failed the build — caught before coding.",
+      "F4 (Major): someone naming a category ‘Uncategorized’ would have merged two buckets — that name is now reserved.",
+      "F5/F8 + more: case-different duplicate categories prevented; every budget figure now uses what you paid."]}
+  ]},
 
  {id:"phaseB", title:"Phase B · Merge tool", status:"queued",
   desc:"Fold duplicate items into one (keep the kept name, union their barcodes, move all purchases over) with a confirm + one-tap undo. Lives right on the Prices item view.",
