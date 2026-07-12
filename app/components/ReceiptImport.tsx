@@ -18,6 +18,7 @@ import {
 import { parsePriceFils, aedFromFils, formatAed } from "@/lib/money";
 import { guessCategory, PRESET_CATEGORIES } from "@/lib/categories";
 import { dubaiToday } from "@/lib/dates";
+import BarcodeLine from "@/app/components/BarcodeLine";
 
 // ---------------------------------------------------------------------------
 // Receipt import — the whole trip in one tap.
@@ -532,6 +533,9 @@ export default function ReceiptImport() {
                 ✕
               </button>
             </div>
+
+            {/* captured barcode for this row (display-only; canonical → printed) */}
+            <BarcodeLine codes={[row.barcode]} />
 
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <div style={{ width: 74, flex: "none" }}>
