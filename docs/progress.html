@@ -47,10 +47,19 @@
   <div class="wrap">
     <div class="nav"><a href="index.html">← Hub</a><a href="spec.html">Spec</a><a href="review.html">🛡️ Review</a><a href="mockup.html">📱 Mockup</a></div>
     <h1>Build Progress</h1>
-    <p class="sub">Receipt Import v2 shipped — barcode identity, offers, multi-buy &amp; dedupe all live. <span class="live"><i></i>live · auto-refreshes every 60s</span></p>
+    <p class="sub">Now building <b>Phase A — Show the barcode</b>. Receipt Import v2 already shipped. <span class="live"><i></i>live · auto-refreshes every 60s</span></p>
 
     <div class="done-banner">✅ Plan 1 (Core) · Plan 2 (Receipt import) · Receipt Import v2 (barcode identity + offers) — all shipped &amp; live at <a href="https://shelfie-gamma-seven.vercel.app" target="_blank">shelfie-gamma-seven.vercel.app</a></div>
 
+    <div class="barwrap">
+      <div class="top"><span style="font-weight:700">Phase A — Show the barcode</span><span class="pct" id="pctA">0%</span></div>
+      <div class="bar"><i id="fillA" style="width:0%"></i></div>
+      <div id="countA" style="color:var(--ink-soft);font-size:13px;margin-top:8px"></div>
+    </div>
+
+    <div id="listA"></div>
+
+    <h2 style="font-size:20px;margin:26px 0 4px">Receipt import (Plan 2) — shipped ✓</h2>
     <div class="barwrap">
       <div class="top"><span style="font-weight:700">Receipt import (Plan 2)</span><span class="pct" id="pct">0%</span></div>
       <div class="bar"><i id="fill" style="width:0%"></i></div>
@@ -67,6 +76,15 @@
   </div>
 
 <script>
+const PHASEA=[
+ {n:"Brainstorm + design approved", d:"owner approved: numbers only, on Prices + receipt review", s:"done"},
+ {n:"Spec written", d:"displayBarcode() rule, surfaces, tests · published to the hub", s:"done"},
+ {n:"Break the spec (adversarial)", d:"skeptical Opus review — found 2 real issues, folded in", s:"done"},
+ {n:"Plan (bite-sized TDD)", d:"failing-test-first task list", s:"active"},
+ {n:"Break the plan", d:"skeptical Opus review of the plan", s:"todo"},
+ {n:"Build (test-first)", d:"fresh Opus per task: red → green → commit", s:"todo"},
+ {n:"Break the build + live verify", d:"review vs spec, then real run on Vercel + the phone", s:"todo"}
+];
 const TASKS=[
  {id:1, n:"Receipt parser", d:"lines → items · qty · unit price · line total; grand-total self-check", s:"done"},
  {id:2, n:"PDF read", d:"pdf.js coordinate extraction of the Tax-Invoice layout", s:"done"},
@@ -82,11 +100,21 @@ const NEXT=[
  {n:"Barcode capture fixed", d:"dropped an over-strict check-digit rule that was rejecting real Carrefour codes; barcodes now store & auto-link (verified live)", tag:"done"},
  {n:"Trip date + quantity", d:"import auto-detects the receipt date (editable) & quantity shows in the review + Prices", tag:"done"},
  {n:"Start-fresh reset", d:"one-tap wipe-all-data (keeps your PIN), confirmation-gated", tag:"done"},
- {n:"Show the barcode", d:"surface each item's barcode so manual linking is easy to verify", tag:"queued"},
+ {n:"Show the barcode", d:"surface each item's barcode so manual linking is easy to verify", tag:"building"},
  {n:"Merge tool", d:"fold already-split duplicate items together (e.g. popcorn ↔ A.G PCORN)", tag:"queued"},
  {n:"Camera scanning", d:"scan instead of type — needs an on-device iOS test first", tag:"last"},
  {n:"Idea · scan → price story", d:"in-store: scan a barcode → app opens that item's Prices/price history instantly", tag:"idea"}
 ];
+const doneA=PHASEA.filter(t=>t.s==="done").length, pctA=Math.round(doneA/PHASEA.length*100);
+document.getElementById("pctA").textContent=pctA+"%";
+document.getElementById("fillA").style.width=pctA+"%";
+document.getElementById("countA").textContent=`${doneA} of ${PHASEA.length} steps complete`;
+document.getElementById("listA").innerHTML=PHASEA.map((t,i)=>`
+  <div class="task ${t.s}">
+    <div class="ic">${t.s==="done"?"✓":t.s==="active"?"◐":i+1}</div>
+    <div class="n">${t.n}<small>${t.d}</small></div>
+    <div class="st">${t.s==="done"?"Done":t.s==="active"?"Building":"Queued"}</div>
+  </div>`).join("");
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
 document.getElementById("fill").style.width=pct+"%";
