@@ -122,6 +122,21 @@ const PHASES=[
       "F2 (Minor): multiple barcodes sat side-by-side — now stacked, as the spec asks."]}
   ]},
 
+ {id:"accuracy", title:"Categories &amp; discount accuracy", status:"active",
+  desc:"Budget now reflects what you actually PAID (receipt discounts netted out); plus add/rename/delete categories and re-file any item — so nothing is stuck in ‘Groceries’.",
+  note:"In design — spec written, break-it passes next. Items stay at shelf price; only the Month total + category filing change.",
+  steps:[
+    {n:"Design approved", s:"done"},
+    {n:"Spec + published", s:"done"},
+    {n:"Break the spec", s:"active"},
+    {n:"Plan (TDD)", s:"todo"},
+    {n:"Break the plan", s:"todo"},
+    {n:"Build", s:"todo"},
+    {n:"Break the build", s:"todo"},
+    {n:"Live verify", s:"todo"}
+  ],
+  breaks:[]},
+
  {id:"phaseB", title:"Phase B · Merge tool", status:"queued",
   desc:"Fold duplicate items into one (keep the kept name, union their barcodes, move all purchases over) with a confirm + one-tap undo. Lives right on the Prices item view.",
   note:"Queued — starts after Phase A is signed off.",
