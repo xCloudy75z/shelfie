@@ -293,6 +293,12 @@ export async function importReceipt(
         },
       });
     }
+  }, {
+    // A ~30-item receipt does ~90 sequential writes (item + barcode + purchase per
+    // row) to Neon; the default 5s interactive-transaction timeout is too tight
+    // (observed 5269ms). Give generous headroom — the real work is only ~5-6s.
+    timeout: 20000,
+    maxWait: 10000,
   });
 
   revalidatePath("/month");

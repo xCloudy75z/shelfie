@@ -5,6 +5,9 @@ import { formatAed } from "@/lib/money";
 
 // Keep this route out of the static build so `next build` never touches the DB.
 export const dynamic = "force-dynamic";
+// Importing a whole receipt writes ~90 rows in one transaction; give the server
+// action room beyond the default function limit so a large receipt can't time out.
+export const maxDuration = 30;
 
 export default async function LogPage() {
   // Existing item names feed the autocomplete; categories feed the picker.
