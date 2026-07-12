@@ -29,8 +29,10 @@ const MONTHS: Record<string, number> = {
 // Numeric date: D[sep]M[sep]YY(YY), separators / . -. Fields anchored on word
 // boundaries so a price like 5.50 (only 2 fields, no year) can't match.
 const NUMERIC_DATE = /\b(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2}|\d{4})\b/;
-// "26 Jun 2026" style.
-const TEXT_DATE = /\b(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})\b/;
+// Text-month date: D[sep]Mon[sep]YYYY where sep is space, hyphen, dot or slash
+// and Mon is a 3+ letter English month name. Matches "26 Jun 2026",
+// "26-Jun-2026", "26/Jun/2026", "26 June 2026".
+const TEXT_DATE = /\b(\d{1,2})[\s/.\-]+([A-Za-z]{3,9})[\s/.\-]+(\d{4})\b/;
 
 function toISO(day: number, month: number, year: number): string | null {
   if (month < 1 || month > 12) return null;
@@ -46,39 +48,59 @@ function isLeap(y: number): boolean {
   return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 }
 
-/** Extract the trip date from any line of the receipt (headers/footers included).
- *  UAE convention is day-first. Returns the first line that yields a valid
- *  calendar date as `yyyy-mm-dd`, or null. Dependency-free. */
-export function extractReceiptDate(lines: string[]): string | null {
-  for (const raw of lines) {
-    const line = raw.replace(/\s+/g, " ").trim();
-    if (!line) continue;
-
-    const t = TEXT_DATE.exec(line);
-    if (t) {
-      const month = MONTHS[t[2].slice(0, 3).toLowerCase()];
-      if (month) {
-        const iso = toISO(parseInt(t[1], 10), month, parseInt(t[3], 10));
-        if (iso) return iso;
-      }
-    }
-
-    const n = NUMERIC_DATE.exec(line);
-    if (n) {
-      const f1 = parseInt(n[1], 10);
-      const f2 = parseInt(n[2], 10);
-      let year = parseInt(n[3], 10);
-      if (n[3].length === 2) year += 2000;
-
-      // Day-first (UAE): field1 is DAY unless it can't be (>12) while field2 can.
-      let day: number, month: number;
-      if (f1 > 12 && f2 <= 12) { day = f1; month = f2; }        // DD/MM
-      else if (f2 > 12 && f1 <= 12) { day = f2; month = f1; }   // MM/DD
-      else { day = f1; month = f2; }                            // ambiguous -> day-first
-      const iso = toISO(day, month, year);
+/** Parse a valid calendar date out of a single line, or null. UAE day-first.
+ *  Tries a text-month date first (D-Mon-YYYY, any separator) then numeric. */
+function parseDateFromLine(line: string): string | null {
+  const t = TEXT_DATE.exec(line);
+  if (t) {
+    const month = MONTHS[t[2].slice(0, 3).toLowerCase()];
+    if (month) {
+      const iso = toISO(parseInt(t[1], 10), month, parseInt(t[3], 10));
       if (iso) return iso;
     }
   }
+
+  const n = NUMERIC_DATE.exec(line);
+  if (n) {
+    const f1 = parseInt(n[1], 10);
+    const f2 = parseInt(n[2], 10);
+    let year = parseInt(n[3], 10);
+    if (n[3].length === 2) year += 2000;
+
+    // Day-first (UAE): field1 is DAY unless it can't be (>12) while field2 can.
+    let day: number, month: number;
+    if (f1 > 12 && f2 <= 12) { day = f1; month = f2; }        // DD/MM
+    else if (f2 > 12 && f1 <= 12) { day = f2; month = f1; }   // MM/DD
+    else { day = f1; month = f2; }                            // ambiguous -> day-first
+    const iso = toISO(day, month, year);
+    if (iso) return iso;
+  }
+  return null;
+}
+
+/** Extract the trip date from the receipt. UAE convention is day-first.
+ *  First looks for the "Invoice Date" label line and parses the date from it;
+ *  only if none is found (or it has no parseable date) does it fall back to
+ *  scanning all lines for the first parseable date. Anchoring to the label
+ *  avoids grabbing an unrelated date printed elsewhere on the receipt.
+ *  Returns `yyyy-mm-dd`, or null. Dependency-free. */
+export function extractReceiptDate(lines: string[]): string | null {
+  const normalized = lines
+    .map((raw) => raw.replace(/\s+/g, " ").trim())
+    .filter((line) => line.length > 0);
+
+  for (const line of normalized) {
+    if (/invoice date/i.test(line)) {
+      const iso = parseDateFromLine(line);
+      if (iso) return iso;
+    }
+  }
+
+  for (const line of normalized) {
+    const iso = parseDateFromLine(line);
+    if (iso) return iso;
+  }
+
   return null;
 }
 
