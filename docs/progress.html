@@ -124,15 +124,15 @@ const PHASES=[
 
  {id:"accuracy", title:"Categories &amp; discount accuracy", status:"active",
   desc:"Budget now reflects what you actually PAID (receipt discounts netted out); plus add/rename/delete categories and re-file any item — so nothing is stuck in ‘Groceries’.",
-  note:"In design — spec written, break-it passes next. Items stay at shelf price; only the Month total + category filing change.",
+  note:"Built — 119 tests green, typecheck + build clean. Break-the-build pass next, then live verify. Items stay at shelf price; only the Month total + category filing change.",
   steps:[
     {n:"Design approved", s:"done"},
     {n:"Spec + published", s:"done"},
     {n:"Break the spec", s:"done"},
     {n:"Plan (TDD)", s:"done"},
     {n:"Break the plan", s:"done"},
-    {n:"Build", s:"active"},
-    {n:"Break the build", s:"todo"},
+    {n:"Build", s:"done"},
+    {n:"Break the build", s:"active"},
     {n:"Live verify", s:"todo"}
   ],
   breaks:[

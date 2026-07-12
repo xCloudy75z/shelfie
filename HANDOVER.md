@@ -86,6 +86,8 @@ Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Lo
 
 **Remaining (optional polish, owner-prioritised):** *Show the captured barcode* on Prices/review (makes manual linking easy to verify), the *merge tool* (fold already-split duplicates), and *camera scanning* (needs an on-device iOS test first) — plus the owner's idea: **scan in-store → open that item's price story**.
 
+**Categories & discount accuracy (Phase A) — BUILT 2026-07-12, awaiting break-build + live verify.** The Month "Spent"/budget now reflects what was actually PAID: each receipt stores a per-trip `discountFils` (shelf grand total − paid) and the Month derives the netted total from LIVE `Purchase.importId` (so deleting/restoring an imported item can never leave a phantom discount); items stay at shelf price and the category chart stays shelf-based. Unknown items now file as **Uncategorized** (null `categoryId`), not "Groceries" — `guessCategory` returns `string | null`. The owner can add/rename/delete categories (Month → Categories card, `CategoryManager`) with reserved-name + case-insensitive-dupe guards, and re-file any item on Prices (`ItemCategoryPicker`); deleting a category moves its items to Uncategorized. Backup restore wipes stale `ReceiptImport` rows. 119 unit tests green, typecheck + build clean. Spec: `docs/superpowers/specs/2026-07-12-categories-and-discounts-design.md`; plan: `plans/2026-07-12-shelfie-categories-and-discounts.md`. Migration `3_receipt_discount` applies on Vercel at deploy.
+
 <details><summary>Original blocker (now resolved) — kept for history</summary>
 
 ### The original open task — fix receipt import (server-side extraction on Vercel)
