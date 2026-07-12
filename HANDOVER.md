@@ -40,6 +40,12 @@ Never build everything in one run. Build the core happy-path, **package it live 
 ### 1.7 Communication
 Plain English first, the *why* before the *what*, short scannable messages, honest about failures (show evidence), a live progress board that flips tasks green. Commit + push frequently (every push auto-deploys to Vercel). Commit co-author line: `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
 
+### 1.8 Keep the hub + docs LIVE (owner preference)
+Update the hub progress board (`docs/progress.html`) and the docs **continuously as work happens** — not as a separate "finalize" phase. The owner watches the board (auto-refreshes every 60s) and reviews only via the hub. Push after each meaningful step so it reflects reality in real time.
+
+### 1.9 Destructive actions confirm first
+Destructive DB operations (wipe / reset / drop) **always confirm first**, and are built confirmation-gated in the UI (the app has a "Start fresh" reset that keeps the PIN). Deleting files: show the full list → get explicit approval → confirm done.
+
 ---
 
 ## 2. Tech stack & architecture (what you're working in)
@@ -110,4 +116,32 @@ Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Lo
 - No local DB — local build/tests are DB-free; DB work happens on Vercel (migrate deploy in `vercel-build`).
 - After any push, verify the deploy: `cmd /c "vercel inspect <url>"` → `status ● Ready`, then hit the live URL.
 
-*You are fully oriented. The app is complete and live; finish §5 and the receipt feature is done.*
+---
+
+## 8. Issues we hit & the exact fix (DON'T re-debug these — 2026-07-12)
+
+A troubleshooting playbook so a new session doesn't spend 100 iterations rediscovering these. All are already fixed in the code; this is *why* and *what*, in case they recur or you touch nearby code.
+
+**pdf.js won't run in Vercel's serverless function** (two separate crashes, both fixed in `lib/receipt-extract-server.ts`):
+1. `ReferenceError: DOMMatrix is not defined` at module load — pdf.js v6 gets `DOMMatrix`/`Path2D` from the optional native `@napi-rs/canvas`, which isn't in the Vercel bundle. **Fix:** install tiny pure-JS `DOMMatrix`/`Path2D` shims on `globalThis` **before** dynamically importing pdf.js (text extraction never uses them). Do NOT try to make `@napi-rs/canvas` bundle — that path failed.
+2. `Setting up fake worker failed: Cannot find module …/pdf.worker.mjs` — pdf.js loads its worker via an import marked `webpackIgnore`, so the bundler skips it. **Fix:** `import()` the worker with a plain literal specifier (so it IS bundled) and set `globalThis.pdfjsWorker` so pdf.js uses it directly.
+
+**Server Action save failed silently ("Couldn't save").** Root cause: **Prisma interactive `$transaction` default timeout is 5s**; a ~30-item receipt (~90 sequential writes to Neon Frankfurt) took 5.3s → `expired transaction`. **Fix:** `db.$transaction(fn, { timeout: 20000, maxWait: 10000 })` + `export const maxDuration = 30` on `app/(app)/log/page.tsx`.
+
+**`vercel logs` streaming DROPS `console.error` intermittently** — you can lose the real error. **Fix / technique:** to capture a failing Server Action fast, temporarily RETURN the error text to the client (`{ error: \`Save error — ${msg}\` }`) — DB/Prisma/pdf.js errors carry no personal data — read it on the owner's screen, then revert to a friendly message. `vercel inspect --logs <url>` shows **build** logs (e.g. `prisma migrate deploy`).
+
+**Barcodes weren't linking** — root cause: **real Carrefour receipt barcodes fail the GTIN mod-10 check digit** (e.g. `071727355039`), and our validator was rejecting them → nothing stored → feature silently inert. **Fix:** `lib/barcode.ts` is now **lenient** — accept any 8–14 digit run, pad to GTIN-14, **no check-digit validation**. Don't re-add the check digit.
+
+**`"use server"` files may only export async functions.** Pure helpers/resolvers (`resolveDraftIdentity`, `resolveManualIdentity`, `shouldDeleteOrphan`) live in `lib/*-match.ts`, imported by both the action and the tests. Don't move them into `app/actions/*`.
+
+**Receipt trip date** is `DD-Mon-YYYY` (e.g. `26-Jun-2026`) on the line labelled **"Invoice Date"**. `extractReceiptDate` handles text-months with any separator and **anchors to the "Invoice Date" line** (there are other dates on the receipt). If a date parses wrong, get the exact printed format from the owner and extend it.
+
+**"Bought twice" for one product is usually CORRECT** — same barcode on two receipt lines = one item, two purchases (multi-buy). Not a bug.
+
+**PowerShell mangles `git commit -m` messages containing backticks / parentheses / slashes.** Write the message to a temp file and use `git commit -F <file>`.
+
+**Prisma migrations** are hand-authored here (`prisma/migrations/N_name/migration.sql`, DB-free locally); `vercel-build` runs `prisma migrate deploy`. "No pending migrations to apply" in the build log is normal once a migration has already been applied on Neon.
+
+---
+
+*You are fully oriented. The app is **complete, live, and verified** (receipt import + v2 done, 103 tests). Remaining work is the optional polish in §5. Follow §1's rules and §8's playbook.*
