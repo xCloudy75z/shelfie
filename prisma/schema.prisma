@@ -65,6 +65,7 @@ model ReceiptImport {
   fingerprint String     @unique
   store       String
   totalFils   Int
+  discountFils Int @default(0) // trip discount = shelf grand total − paid; nets the Month total to what was paid
   importedAt  DateTime   @default(now())
   purchases   Purchase[]
 }
