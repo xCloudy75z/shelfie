@@ -53,7 +53,7 @@ Plain English first, the *why* before the *what*, short scannable messages, hone
 ---
 
 ## 3. What's DONE and live (don't redo)
-Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Log** (manual entry + mobile typeahead + item-identity confirm); **Prices** (unit-price verdict, offer-excluded, 3-sample gate, instant load); **Month** (pay-cycle budget/pace, category bars, edit/delete purchases); **Backup & Restore** (validated, snapshot+undo); **auto-update + version stamp**; **installable PWA + icons**. **54 unit tests green**, 3 review passes. The receipt **parser** (`lib/receipt.ts`) is also done and **proven correct** (parsed the owner's real receipt: 28 items, total matched, in Node).
+Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Log** (manual entry + mobile typeahead + item-identity confirm); **Prices** (unit-price verdict, offer-excluded, 3-sample gate, instant load); **Month** (pay-cycle budget/pace, category bars, edit/delete purchases); **Backup & Restore** (validated, snapshot+undo); **auto-update + version stamp**; **installable PWA + icons**. **54 unit tests green**, 3 review passes. The receipt **parser** (`lib/receipt.ts`) is also done and **proven correct**. **Receipt import + Receipt Import v2 are now fully shipped & verified live (2026-07-12)**: server-side PDF read on Vercel, barcode identity (two-way, **lenient** validation — real Carrefour codes fail the GTIN check digit), per-item offers, no-barcode flag, "same as"/detach linking, dual dedupe, multi-buy, auto-detected trip date (anchored to the "Invoice Date" line), per-unit prices, a scrollable Month purchases box, and a confirmation-gated **"Start fresh"** reset. **103 unit tests green.**
 
 ---
 
@@ -61,7 +61,7 @@ Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Lo
 - `docs/MASTER-DOCUMENTATION.md` — **the full reference** (read for depth).
 - `docs/` — the GitHub Pages hub: `index.html` (hub), `mockup.html`, `spec.html`, `review.html`, `progress.html` (live board, auto-refresh 60s), `masterdoc.html`, `shelfie.css`, `theme.js`.
 - `plans/2026-07-10-shelfie-core.md` (Plan 1) · `plans/2026-07-11-shelfie-receipt-import.md` (Plan 2).
-- `lib/` pure logic (money, dates, price-stats, items, categories, receipt, backup, auth, session, db) + `receipt-extract.ts` (browser, parked) + `receipt-extract-server.ts` (server, current).
+- `lib/` pure logic (money, dates, price-stats, items, categories, receipt, **barcode** (GTIN-14 canonicalise, lenient), **receipt-match** (`resolveDraftIdentity`), **purchase-match** (`resolveManualIdentity`, `shouldDeleteOrphan`), backup, auth, session, db) + `receipt-extract.ts` (browser, parked) + `receipt-extract-server.ts` (server, current). **Pure resolvers live in `lib/` — a `"use server"` file may only export async functions.**
 - `app/actions/` server actions · `app/(app)/{log,prices,month}` tabs · `app/components/` UI · `app/lock/` PIN · `middleware.ts`.
 - `prisma/` schema+config+migrations+seed · `tests/` (54) · `scripts/` (copy-pdf-assets, gen-icons).
 
