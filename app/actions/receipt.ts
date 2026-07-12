@@ -315,10 +315,6 @@ export async function importReceipt(
       "[importReceipt] failed:",
       err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : err,
     );
-    // TEMP DIAGNOSTIC: surface the real error text on-screen (DB/Prisma errors carry
-    // no personal data) because Vercel's log streaming is dropping the server log.
-    // Revert to a friendly message once the cause is found.
-    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-    return { error: `Save error — ${detail}`.slice(0, 400) };
+    return { error: "Couldn't save that receipt — please try again." };
   }
 }
