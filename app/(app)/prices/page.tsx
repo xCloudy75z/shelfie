@@ -147,6 +147,12 @@ export default async function PricesPage({
                     timeZone: "Asia/Dubai",
                   })}
                 </span>
+                <span
+                  className="mono"
+                  style={{ fontSize: 12, color: "var(--ink-faint)", minWidth: 34, textAlign: "right" }}
+                >
+                  {p.unit === "kg" ? `${p.quantity} kg` : `×${p.quantity}`}
+                </span>
                 <span className="mono" style={{ fontWeight: 700, minWidth: 88, textAlign: "right" }}>
                   {formatAed(p.totalFils)}
                 </span>

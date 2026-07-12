@@ -17,6 +17,7 @@ import {
 } from "@/app/actions/receipt";
 import { parsePriceFils, aedFromFils, formatAed } from "@/lib/money";
 import { guessCategory, PRESET_CATEGORIES } from "@/lib/categories";
+import { dubaiToday } from "@/lib/dates";
 
 // ---------------------------------------------------------------------------
 // Receipt import — the whole trip in one tap.
@@ -154,6 +155,11 @@ export default function ReceiptImport() {
   // Duplicate-import confirmation (server said this trip looks already imported).
   const [dupWhen, setDupWhen] = useState<string | null>(null);
 
+  // Purchase date for the whole trip (yyyy-mm-dd). Auto-filled from the receipt
+  // when the parse found a date; otherwise falls back to today (Asia/Dubai).
+  const [purchaseDate, setPurchaseDate] = useState<string>("");
+  const [dateAutoDetected, setDateAutoDetected] = useState(false);
+
   const [toast, setToast] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
@@ -169,6 +175,8 @@ export default function ReceiptImport() {
     setRowErrors(new Set());
     setSaveError(null);
     setDupWhen(null);
+    setPurchaseDate("");
+    setDateAutoDetected(false);
     setErrorMsg(null);
     setErrorKind("read");
     if (fileRef.current) fileRef.current.value = "";
@@ -232,6 +240,8 @@ export default function ReceiptImport() {
           };
         }),
       );
+      setPurchaseDate(p.purchaseDateISO ?? dubaiToday());
+      setDateAutoDetected(p.purchaseDateISO != null);
       setRowErrors(new Set());
       setSaveError(null);
       setDupWhen(null);
@@ -308,6 +318,7 @@ export default function ReceiptImport() {
           grandTotalFils,
           fingerprint: parsed.fingerprint,
           legacyFingerprint: parsed.legacyFingerprint,
+          ...(purchaseDate ? { purchasedAt: purchaseDate } : {}),
           force,
         });
         if ("ok" in res) {
@@ -417,6 +428,34 @@ export default function ReceiptImport() {
 
   return (
     <div className="card">
+      {/* Purchase date — auto-filled from the receipt, editable before saving. */}
+      <div style={{ marginBottom: 12 }}>
+        <label htmlFor="import-purchase-date" style={s.miniLabel}>
+          Purchase date
+        </label>
+        <input
+          id="import-purchase-date"
+          type="date"
+          value={purchaseDate}
+          onChange={(e) => {
+            setPurchaseDate(e.target.value);
+            setDateAutoDetected(false);
+          }}
+          style={s.field}
+        />
+        {dateAutoDetected && (
+          <p
+            style={{
+              fontSize: 11,
+              color: "var(--ink-faint)",
+              margin: "4px 2px 0",
+            }}
+          >
+            detected from receipt — change if needed
+          </p>
+        )}
+      </div>
+
       {/* Badge */}
       {p?.matchesTotal ? (
         <div style={badge("green")}>
