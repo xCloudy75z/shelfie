@@ -70,7 +70,16 @@ export default function EditablePurchases({
   }
 
   return (
-    <>
+    <div
+      style={{
+        // Show ~4 purchases; the rest scroll inside the box so a big import
+        // (a whole receipt) never makes the Month page endlessly long.
+        maxHeight: 268,
+        overflowY: "auto",
+        paddingRight: 4,
+        WebkitOverflowScrolling: "touch",
+      }}
+    >
       {rows.map((row) => (
         <PurchaseRow
           key={row.id}
@@ -85,7 +94,7 @@ export default function EditablePurchases({
           }}
         />
       ))}
-    </>
+    </div>
   );
 }
 
