@@ -19,9 +19,19 @@ model Item {
   categoryId String?
   category   Category?  @relation(fields: [categoryId], references: [id])
   purchases  Purchase[]
+  barcodes   Barcode[]
   createdAt  DateTime   @default(now())
 
   @@index([normalized])
+}
+
+model Barcode {
+  code      String   @id            // canonical GTIN-14; one barcode -> one item
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([itemId])
 }
 
 model Purchase {
