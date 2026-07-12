@@ -1,0 +1,105 @@
+SHELFIE — POLISH PHASES (A/B/C/D): ANSWERS FROM THE PREVIOUS SESSION
+Prepared 2026-07-12 by the session that built Receipt Import v2. These are RECOMMENDATIONS
+to feed the brainstorm/spec — NOT a green light to start coding. Per HANDOVER.md §1.4 the new
+session must still: brainstorm with the owner -> publish a spec to the hub for approval ->
+break the spec -> plan -> break the plan -> build -> break the build -> live-verify (same as v2).
+
+Legend: (FORK) = the owner flagged this as blocking.  ✅ = agree with the new session's default.
+⚠️ = a correctness/refinement note worth reading.
+
+
+===================================================================================
+PHASE A — SHOW THE BARCODE
+===================================================================================
+
+A1. (FORK) Number only, NOT number + bars graphic.  ✅
+    Purpose is verifying identity against the receipt/pack, not re-scanning off a screen.
+    A bars graphic needs a rendering lib and clutters a lean app. If scanning lands later,
+    you scan the physical item, not the screen.
+
+A2. Where: Prices tab + receipt-review screen.  ✅
+    Small/muted near the item name on Prices. Skip the manual Log form and Month edit list
+    (avoid clutter).
+
+A3. Which digits: show TRIMMED — but do it correctly.  ⚠️
+    Do NOT naively strip all leading zeros. Stored canonical is zero-padded to 14
+    (00071727355039); the receipt prints 071727355039. Strip-all-zeros gives 71727355039,
+    which WRONGLY drops the leading 0 that is actually printed.
+    Correct rule: strip the PADDING, then restore to the nearest standard GTIN length
+    (8 / 12 / 13 / 14). That recovers exactly what's printed for normal codes. Make this a
+    small display helper (e.g. displayBarcode(canonical)).
+
+A4. Multiple barcodes per item: show ALL, small, stacked.  ✅
+    Rare to exceed 1–2.
+
+A5. Display-only in Phase A.  ✅
+    Detaching/fixing belongs in Phase B. (The import review screen already has a
+    "not this item" detach for the in-progress import.)
+
+
+===================================================================================
+PHASE B — MERGE TOOL
+===================================================================================
+
+B6. (FORK) Where it lives — REFINEMENT (leaner than a new screen):
+    Put a "Merge into another item…" action ON the Prices item view — that's the exact moment
+    you realise "this is a duplicate of X." Reuses the existing item selector, no new top-level
+    screen. (A dedicated "Manage items" list can come later if bulk cleanup is wanted.)
+    [Either this or the new session's "small Manage items section from Prices" is fine —
+     recommend the on-Prices action for leanness.]
+
+B7. (FORK) Manual pick-two to start.  ✅
+    No false-positives; the owner knows the dupes. Auto-suggest (fuzzy name match) can come later.
+
+B8. Merge mechanics — CONFIRMED CORRECT.
+    Fold A into B: keep B's name; UNION barcodes onto B (each `code` is a unique PK, so
+    repointing Barcode.itemId from A->B never collides); REPOINT all of A's purchases
+    (Purchase.itemId A->B); delete A. B keeps its category. Clean on the current data model.
+
+B9. Undoable: confirm-first + one-tap Undo.  ✅
+    Merge deletes an item, so use the snapshot+undo pattern already used by Backup/Restore.
+
+B10. Merge only, no split.  ✅  Split is out of scope.
+
+
+===================================================================================
+PHASE C — CAMERA SCANNING   (feasibility-gated; shares one scanner with Phase D)
+===================================================================================
+
+C11. (FORK) Adding a scanner dependency — OWNER'S CALL. Recommendation: YES, but gated on an
+     on-device spike FIRST.
+     iPhone Safari has no built-in barcode reader, so it needs a small JS library
+     (@zxing/browser or html5-qrcode — both free, decode ON-DEVICE, no cost, no privacy issue,
+     ~one dependency). BUT: iOS-Safari camera inside an INSTALLED PWA is exactly the class of
+     thing that burned us on PDF import. So PROVE the camera works in the owner's installed PWA
+     on his actual iPhone (a throwaway spike) BEFORE committing the dependency. Spike passes -> add it.
+
+C12. (STRUCTURAL) Scan does BOTH: fill/identify on the Log form AND look up on Prices.  ✅
+     One scanner, two entry points (= Phase D).
+
+C13. Unknown scanned barcode (no item yet): prefill a NEW-ITEM form with it.  ✅
+
+C14. Manual type-in field stays as the fallback (camera denied/fails).  ✅ Confirmed.
+
+
+===================================================================================
+PHASE D — SCAN -> PRICE STORY
+===================================================================================
+
+D15. (STRUCTURAL) CONFIRMED: build ONE shared scanner component with TWO destinations
+     (Log = fill/identify; Prices = open that item's price story). Do NOT build scanning twice.
+
+D16. Scan an item with no history yet, at the shelf: show
+     "No price history yet — start tracking?" with a prefill to log the first purchase.  ✅
+
+
+===================================================================================
+SUMMARY OF THE ONLY REAL OWNER-DECISIONS
+===================================================================================
+- C11: whether to add the scanner dependency at all (the "lean app" tradeoff) — and, implicitly,
+  whether scanning (C+D) is worth it or you stop at A+B.
+Everything else above is safe to run with the recommendations.
+
+Sequence reminder (owner-prioritised): A (show barcode) and B (merge tool) are the near-term
+polish; C+D (scanning) are "last" and feasibility-gated on the iOS spike. Plus the owner's own
+idea already on the hub board: scan in-store -> open that item's price story (that's D).
