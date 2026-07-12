@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shelfie — Phase A: barcode mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('shelfie-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<link rel="stylesheet" href="shelfie.css" />
+<style>
+  .wrap{max-width:760px;margin:0 auto;padding:52px 20px 90px}
+  .nav{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+  .nav a{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;text-decoration:none;color:var(--green-strong);font-weight:700;font-size:14px}
+  h1{font-size:clamp(30px,6vw,44px);margin:6px 0 6px}
+  .sub{color:var(--ink-soft);font-size:16px;margin:0 0 26px;max-width:60ch}
+  h2{font-size:23px;margin:38px 0 6px}
+  .lead{color:var(--ink-soft);font-size:14.5px;margin:0 0 18px}
+  /* a mock "phone" surface so options are judged in context */
+  .surface{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow-sm);margin:0 0 14px}
+  .opt{border:1px dashed var(--line);border-radius:14px;padding:16px;margin:14px 0;background:var(--card-2)}
+  .opt .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--green-strong);background:var(--green-soft);border-radius:999px;padding:3px 10px;margin-bottom:12px}
+  .itemname{font-family:var(--font-display);font-size:20px;font-weight:600;margin:0}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  /* review row mock */
+  .revrow{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--card-2);margin:10px 0}
+  .revrow .rn{font-weight:600}
+  .field{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--card);font-size:14px;color:var(--ink);display:inline-block}
+  .foot{margin-top:40px;color:var(--ink-faint);font-size:13px;text-align:center}
+  .pick{background:var(--green-soft);border:1px solid color-mix(in srgb,var(--green) 30%,var(--line));border-radius:14px;padding:14px 16px;color:var(--green-strong);font-weight:600;font-size:14.5px;margin:8px 0 24px}
+</style>
+</head>
+<body>
+  <button class="theme-toggle" aria-label="Toggle light/dark"><span class="moon">🌙</span><span class="sun">☀️</span></button>
+  <div class="wrap rise">
+    <div class="nav"><a href="index.html">← Hub</a><a href="progress.html">📊 Progress</a><a href="https://shelfie-gamma-seven.vercel.app" target="_blank">▶ Live app</a></div>
+    <h1>Phase A — how should the barcode look?</h1>
+    <p class="sub">Pick the style you like best for showing an item's barcode. Everything below is a mockup at the real size, in the real app colours — toggle 🌙/☀️ to see both themes. Tell me the option letter (or mix &amp; match) and I'll build it.</p>
+
+    <div class="pick">👉 Just reply with a letter: <b>A</b>, <b>B</b>, <b>C</b>, or <b>D</b> — and which red style for the review (<b>R1</b> or <b>R2</b>).</div>
+
+    <h2>1 · On the Prices tab</h2>
+    <p class="lead">This shows under the item name when you open an item's price story.</p>
+
+    <div class="surface">
+      <div class="opt">
+        <span class="tag">Option A · labelled + darker</span>
+        <p class="itemname">Al Marai Milk FF 1L</p>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-top:8px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)">Barcode</span>
+          <span class="mono" style="font-size:15px;color:var(--ink);font-weight:600">071727355039</span>
+        </div>
+      </div>
+
+      <div class="opt">
+        <span class="tag">Option B · bordered chip</span>
+        <p class="itemname">Al Marai Milk FF 1L</p>
+        <div class="pillrow">
+          <span class="mono" style="display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--ink);font-weight:600;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 13px">
+            <span aria-hidden="true">🏷</span>071727355039
+          </span>
+        </div>
+      </div>
+
+      <div class="opt">
+        <span class="tag">Option C · big &amp; bold</span>
+        <p class="itemname">Al Marai Milk FF 1L</p>
+        <div class="mono" style="display:flex;align-items:center;gap:8px;font-size:19px;font-weight:700;color:var(--ink);margin-top:8px">
+          <span aria-hidden="true" style="font-size:17px">🏷</span>071727355039
+        </div>
+      </div>
+
+      <div class="opt">
+        <span class="tag">Option D · real barcode bars + number</span>
+        <p class="itemname">Al Marai Milk FF 1L</p>
+        <div style="margin-top:10px">
+          <svg width="190" height="52" viewBox="0 0 190 52" role="img" aria-label="Barcode 071727355039" style="display:block">
+            <rect width="190" height="52" fill="transparent"/>
+            <g fill="var(--ink)">
+              <rect x="2" y="2" width="2" height="40"/><rect x="6" y="2" width="4" height="40"/>
+              <rect x="13" y="2" width="2" height="40"/><rect x="18" y="2" width="6" height="40"/>
+              <rect x="27" y="2" width="2" height="40"/><rect x="32" y="2" width="3" height="40"/>
+              <rect x="39" y="2" width="5" height="40"/><rect x="47" y="2" width="2" height="40"/>
+              <rect x="52" y="2" width="4" height="40"/><rect x="60" y="2" width="2" height="40"/>
+              <rect x="65" y="2" width="6" height="40"/><rect x="74" y="2" width="2" height="40"/>
+              <rect x="79" y="2" width="3" height="40"/><rect x="85" y="2" width="5" height="40"/>
+              <rect x="93" y="2" width="2" height="40"/><rect x="98" y="2" width="4" height="40"/>
+              <rect x="106" y="2" width="2" height="40"/><rect x="111" y="2" width="6" height="40"/>
+              <rect x="120" y="2" width="2" height="40"/><rect x="125" y="2" width="3" height="40"/>
+              <rect x="131" y="2" width="5" height="40"/><rect x="139" y="2" width="2" height="40"/>
+              <rect x="144" y="2" width="4" height="40"/><rect x="152" y="2" width="2" height="40"/>
+              <rect x="157" y="2" width="6" height="40"/><rect x="166" y="2" width="2" height="40"/>
+              <rect x="171" y="2" width="3" height="40"/><rect x="177" y="2" width="5" height="40"/>
+              <rect x="185" y="2" width="2" height="40"/>
+            </g>
+          </svg>
+          <span class="mono" style="font-size:13px;color:var(--ink-soft);letter-spacing:.18em">071727355039</span>
+        </div>
+      </div>
+    </div>
+
+    <h2>2 · On the receipt-review screen</h2>
+    <p class="lead">New: when a receipt line has <b>no barcode</b>, mark it clearly so you can spot it while scanning the list before saving. Two red styles — which do you prefer?</p>
+
+    <div class="surface">
+      <p style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 4px">R1 · red badge + red edge</p>
+
+      <!-- has barcode: normal -->
+      <div class="revrow">
+        <div class="rn">Al Marai Milk FF 1L</div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+          <span class="field mono">×1</span><span class="field mono">AED 6.50</span>
+          <span class="mono" style="font-size:12px;color:var(--ink-soft);display:inline-flex;align-items:center;gap:5px"><span aria-hidden="true">🏷</span>071727355039</span>
+        </div>
+      </div>
+
+      <!-- no barcode: red badge + red left edge -->
+      <div class="revrow" style="border-color:var(--red);border-left:4px solid var(--red);background:var(--red-soft)">
+        <div class="rn" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          Bananas (loose)
+          <span style="font-size:11px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--red);border-radius:999px;padding:3px 9px">NO BARCODE</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+          <span class="field mono">1.2 kg</span><span class="field mono">AED 5.88</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="surface">
+      <p style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 4px">R2 · quieter — red text tag only, no fill</p>
+
+      <div class="revrow">
+        <div class="rn">Al Marai Milk FF 1L</div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+          <span class="field mono">×1</span><span class="field mono">AED 6.50</span>
+          <span class="mono" style="font-size:12px;color:var(--ink-soft);display:inline-flex;align-items:center;gap:5px"><span aria-hidden="true">🏷</span>071727355039</span>
+        </div>
+      </div>
+
+      <div class="revrow">
+        <div class="rn">Bananas (loose)</div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+          <span class="field mono">1.2 kg</span><span class="field mono">AED 5.88</span>
+          <span style="font-size:12px;font-weight:800;color:var(--red);display:inline-flex;align-items:center;gap:5px">⚠ no barcode</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="foot">Mockup only — nothing here is wired to real data. Reply with your picks and I'll build them, run the break-it passes, and ship to the live app.</p>
+  </div>
+<script src="theme.js"></script>
+</body>
+</html>
