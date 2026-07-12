@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shelfie — Receipt Import v2 (Barcode Identity)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('shelfie-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<link rel="stylesheet" href="shelfie.css" />
+<style>
+  .wrap{max-width:780px;margin:0 auto;padding:52px 20px 80px}
+  .nav{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+  .nav a{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;text-decoration:none;color:var(--green-strong);font-weight:700;font-size:14px}
+  .nav a.primary{background:var(--green);color:#fff;border-color:var(--green)}
+  h1{font-size:clamp(32px,6vw,48px);margin:6px 0 6px}
+  .tagline{color:var(--ink-soft);font-size:18px;margin:0 0 22px}
+  .lead{background:var(--green-soft);border:1px solid color-mix(in srgb,var(--green) 30%,var(--line));
+    border-radius:16px;padding:18px 22px;color:var(--green-strong);font-size:16.5px}
+  .lead b{color:var(--ink)}
+  h2{font-size:25px;margin:40px 0 6px}
+  h3{font-size:18px;margin:20px 0 4px;font-family:var(--font-body);font-weight:800}
+  p{margin:8px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:14px 0;box-shadow:var(--shadow-sm)}
+  ul,ol{margin:8px 0;padding-left:22px}li{margin:6px 0}
+  code{background:var(--card-2);border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-family:var(--font-mono);font-size:13.5px}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--green-soft);color:var(--green-strong);margin:3px 4px 3px 0}
+  .tag.later{background:var(--amber-soft);color:var(--amber)}
+  .tag.cut{background:var(--red-soft);color:var(--red)}
+  .step{display:flex;gap:12px;margin:10px 0}
+  .step .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-weight:800;display:grid;place-items:center;font-size:14px}
+  .hard{border-left:3px solid var(--green);background:var(--card-2);border-radius:0 10px 10px 0;padding:10px 14px;margin:10px 0;font-size:14.5px}
+  .hard b{color:var(--green-strong)}
+  .ok{color:var(--green-strong);font-weight:700}
+  .foot{margin-top:44px;color:var(--ink-faint);font-size:13px;text-align:center}
+  .cta{background:var(--green);color:#fff;border-radius:16px;padding:20px 22px;margin:26px 0;font-size:16.5px}
+  .cta b{color:#fff}
+</style>
+</head>
+<body>
+  <button class="theme-toggle" aria-label="Toggle light/dark"><span class="moon">🌙</span><span class="sun">☀️</span></button>
+  <div class="wrap">
+    <div class="nav">
+      <a href="index.html">← Hub</a>
+      <a class="primary" href="https://shelfie-gamma-seven.vercel.app" target="_blank">🚀 Live app</a>
+    </div>
+
+    <h1>Receipt Import v2</h1>
+    <p class="tagline">Barcodes as the true identity of a product — so receipt names and your own names finally line up. Plus per-item “on offer”, and a built-in accuracy check.</p>
+    <div class="lead"><b>The idea in one line:</b> every real product line on the receipt is followed by its <b>barcode</b>. We start using that barcode as the product's real identity — so <em>“A.G PCORN EBTR273G”</em> and your <em>“Americana Garden popcorn”</em> become the same item, automatically, from now on.</div>
+
+    <h2>What we're fixing</h2>
+    <div class="card">
+      <p><b>1. Cryptic names split your history.</b> Today items match by name only, so a receipt's short code never lines up with what you type by hand → two items → wrong price story.</p>
+      <p><b>2. No “on offer” on import.</b> Every imported item is treated as full price, so a promo can wrongly become your “best price ever”.</p>
+      <p><b>3. “Is the item count right?”</b> You saw 30 items and weren't sure. There was no self-check.</p>
+    </div>
+
+    <h2>How the barcode fix works</h2>
+
+    <h3>Reading receipts</h3>
+    <div class="step"><div class="n">1</div><div>Each product line's <b>barcode</b> is captured and stored with the item (hidden — you never have to look at it).</div></div>
+    <div class="step"><div class="n">2</div><div>Next time <b>any</b> receipt has that barcode, it's filed under <b>your</b> friendly name automatically — no cryptic duplicate, ever again.</div></div>
+    <div class="step"><div class="n">3</div><div>First time a barcode is new, it comes in with the receipt name; on the review screen you can rename it and/or tap <b>“same as my [item]”</b>. Whatever you choose is remembered against that barcode forever. You're never forced — you can just save and tidy later.</div></div>
+
+    <h3>Manual entry (the two-way bridge)</h3>
+    <div class="card">
+      <p>A new <b>optional</b> “Barcode” field on the manual form. When you enter one:</p>
+      <ul>
+        <li><b>Already known</b> → links automatically, fills in your friendly name.</li>
+        <li><b>New, but the name matches something you have</b> → attaches the barcode to that item (so future receipts of it auto-match).</li>
+        <li><b>Genuinely new</b> → saves as a new item with that barcode.</li>
+      </ul>
+      <p>Skip the field and everything works exactly as today.</p>
+    </div>
+
+    <h3>The accuracy self-check</h3>
+    <div class="hard">A genuine product always has a barcode right under it; a <b>TOTAL / DISCOUNT / heading</b> line does not. So any row we pick up with <b>no barcode</b> gets a small <b>“check this”</b> flag on the review screen for you to confirm or remove. Nothing junk slips in — and nothing real is ever dropped.</div>
+
+    <h3>On offer</h3>
+    <p>A per-item <b>“on offer”</b> checkbox on the review screen (just like manual entry). Ticked items are correctly kept out of your “best price” comparisons.</p>
+
+    <h2>Built to not break later</h2>
+    <p>You asked for a genuine build, no fixing afterwards. So before any code, the design gets an <b>adversarial review</b> — I try hard to break it. Cases it must survive:</p>
+    <div class="card">
+      <ul>
+        <li>Same barcode <b>twice</b> on one receipt (bought 2) → one item, two clean lines.</li>
+        <li>Barcode matches your item but the receipt name differs → <b>barcode wins</b>.</li>
+        <li>A real item with <b>no barcode</b> (weighed produce, carrier bag) → flagged, never dropped.</li>
+        <li>The receipt's <b>bottom transaction barcode</b> → never mistaken for a product.</li>
+        <li><b>Re-importing</b> the same receipt after you renamed items → still caught as a duplicate.</li>
+        <li>A typed barcode that clashes with a different product → no silent overwrite.</li>
+      </ul>
+    </div>
+    <div class="hard"><b>Finish gate:</b> not “done” until it's proven on the <b>real Vercel app AND your iPhone</b> with a real receipt — not just local tests. That's the exact gap that let the earlier import bug through.</div>
+
+    <h2>What's in this round — and what's later</h2>
+    <p><span class="tag">NOW</span> Barcode capture · two-way matching · per-item offers · accuracy self-check · review-screen rename/link · full tests + live proof.</p>
+    <p><span class="tag later">NEXT</span> A <b>merge tool</b> to fold together duplicates you've already built up.</p>
+    <p><span class="tag later">LAST</span> Camera <b>barcode scanning</b> (free tools, $0 to run — but iPhone camera needs an on-device test first).</p>
+
+    <div class="cta"><b>Does this match what you want?</b> If yes, I'll turn it into a step-by-step, test-first build plan and start building — core first, packaged and proven on your phone, then check in. If you want anything changed, tell me and I'll revise the spec.</div>
+
+    <p class="foot">Shelfie · Receipt Import v2 design · 2026-07-12 · ⚡ All Opus</p>
+  </div>
+  <script src="theme.js"></script>
+</body>
+</html>
