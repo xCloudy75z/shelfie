@@ -1,9 +1,12 @@
+import { canonicalizeBarcode } from "./barcode";
+
 export type DraftItem = {
   name: string;
   quantity: number;
   unit: "each" | "kg";
   unitPriceFils: number; // unit price incl VAT
   lineFils: number;      // line total incl VAT (what was paid for the line)
+  barcode?: string | null; // canonical GTIN-14 captured from a `Barcode:` line, or null
 };
 export type ParsedReceipt = {
   items: DraftItem[];
@@ -24,25 +27,39 @@ export function parseReceipt(lines: string[]): ParsedReceipt {
   let paidFils: number | null = null;
   const warnings: string[] = [];
 
+  let current: DraftItem | null = null;
   for (const raw of lines) {
     const line = raw.replace(/\s+/g, " ").trim();
-    if (!line || /^barcode/i.test(line)) continue;
+    if (!line) { current = null; continue; }
+
+    // Barcode line: attach to the item directly above, then this line is consumed.
+    if (/^barcode\b/i.test(line)) {
+      if (current) current.barcode = canonicalizeBarcode(line);
+      continue; // keep `current` so nothing else attaches; next non-item line resets it
+    }
+
     const totalMatch = /total amount incl\.?\s*vat.*?(\d+\.\d{2})\s*$/i.exec(line);
-    if (totalMatch) { grandTotalFils = fils(totalMatch[1]); continue; }
+    if (totalMatch) { grandTotalFils = fils(totalMatch[1]); current = null; continue; }
+
     const paidMatch = /^amount\s*:?\s*aed\s*(\d+\.\d{2})/i.exec(line);
-    if (paidMatch) { paidFils = fils(paidMatch[1]); continue; }
+    if (paidMatch) { paidFils = fils(paidMatch[1]); current = null; continue; }
+
     const m = ITEM.exec(line);
-    if (!m) continue;
+    if (!m) { current = null; continue; }
     const name = m[1].trim();
-    if (/description|unit price|vat/i.test(name)) continue; // header row
+    if (/description|unit price|vat/i.test(name)) { current = null; continue; } // header row
+
     const quantity = parseFloat(m[2]);
-    items.push({
+    const draft: DraftItem = {
       name,
       quantity,
       unit: Number.isInteger(quantity) ? "each" : "kg",
       unitPriceFils: fils(m[3]),
       lineFils: fils(m[4]),
-    });
+      barcode: null,
+    };
+    items.push(draft);
+    current = draft;
   }
 
   const sumFils = items.reduce((a, b) => a + b.lineFils, 0);
