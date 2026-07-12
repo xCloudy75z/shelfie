@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { normalizeName } from "@/lib/items";
+import { findOrCreateCategory } from "@/lib/category-db";
 import {
   validateBackup,
   CURRENT_BACKUP_VERSION,
@@ -88,8 +89,11 @@ export async function restoreBackup(data: BackupData): Promise<RestoreResult> {
 
   // (3) One transaction: wipe, then rebuild with fresh ids.
   await db.$transaction(async (tx) => {
-    // Order matters: purchases reference items; budgets stand alone.
+    // Order matters: purchases reference items + imports; budgets stand alone.
+    // Wipe stale receipt imports too, so their captured discountFils can't leave
+    // a phantom discount netting the restored Month total.
     await tx.purchase.deleteMany({});
+    await tx.receiptImport.deleteMany({});
     await tx.item.deleteMany({});
     await tx.budget.deleteMany({});
 
@@ -103,12 +107,8 @@ export async function restoreBackup(data: BackupData): Promise<RestoreResult> {
     ];
     const catIdByName = new Map<string, string>();
     for (const name of catNames) {
-      const cat = await tx.category.upsert({
-        where: { name },
-        update: {},
-        create: { name },
-      });
-      catIdByName.set(name, cat.id);
+      const id = await findOrCreateCategory(tx, name);
+      catIdByName.set(name, id);
     }
 
     // Create items fresh; remember the new id for each name so purchases link up.
