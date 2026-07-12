@@ -17,10 +17,12 @@
 ## File map
 
 - **Create** `lib/barcode.ts` — canonicalise + validate barcodes (pure).
+- **Create** `lib/receipt-match.ts` — pure `resolveDraftIdentity` (import-matching precedence). MUST live in `lib/`, not `app/actions/receipt.ts`: a `"use server"` file may only export async functions.
+- **Create** `lib/purchase-match.ts` — pure `resolveManualIdentity` + `shouldDeleteOrphan` (same reason).
 - **Create** `tests/barcode.test.ts`, `tests/receipt-barcode.test.ts`, `tests/receipt-fingerprint.test.ts`, `tests/import-matching.test.ts`, `tests/manual-barcode.test.ts`, `tests/backup-barcode.test.ts`.
 - **Modify** `prisma/schema.prisma` — add `Barcode` model + `Item.barcodes` back-relation. New migration `prisma/migrations/2_add_barcode/`.
 - **Modify** `lib/receipt.ts` — `DraftItem.barcode`; barcode pairing + pointer reset in `parseReceipt`; raw-parse fingerprint (new + legacy) via `computeFingerprint`/`computeLegacyFingerprint`.
-- **Modify** `lib/items.ts` — add `resolveByBarcode` helper types if needed (matching lives in the action).
+- **Modify** `lib/items.ts` — none required (reuse `normalizeName`/`resolveItem`); matching helpers live in the new `lib/*-match.ts` files.
 - **Modify** `app/actions/receipt.ts` — `parseReceiptUpload` returns both fingerprints; `importReceipt` precedence, per-run caches, create-if-absent, offer flag, dual-dedupe, detach/link.
 - **Modify** `app/actions/purchases.ts` — `addPurchase` optional barcode + precedence; `deletePurchase` orphan-prune guard for barcode-owning items.
 - **Modify** `app/components/PurchaseForm.tsx` — optional "Barcode" field.
@@ -485,7 +487,7 @@ Because most matching logic is pure, extract a testable resolver. Create an expo
 ```ts
 // tests/import-matching.test.ts
 import { describe, it, expect } from "vitest";
-import { resolveDraftIdentity } from "@/app/actions/receipt";
+import { resolveDraftIdentity } from "@/lib/receipt-match";
 
 // existingByBarcode: code -> itemId ; existingByName: normalizedName -> itemId
 const ctx = () => ({
@@ -527,11 +529,10 @@ describe("resolveDraftIdentity", () => {
 Run: `cmd /c "npx vitest run tests/import-matching.test.ts"`
 Expected: FAIL — `resolveDraftIdentity` not exported.
 
-- [ ] **Step 3: Implement the resolver + wire the action** in `app/actions/receipt.ts`.
-
-Add the pure resolver (exported):
+- [ ] **Step 3: Create the pure resolver, then wire the action.** The resolver goes in a NEW file `lib/receipt-match.ts` — it must NOT be exported from `app/actions/receipt.ts`, because that file starts with `"use server"` and Next.js forbids exporting non-async functions from such a module.
 
 ```ts
+// lib/receipt-match.ts
 import { normalizeName } from "@/lib/items";
 
 export type ResolveCtx = { byBarcode: Map<string, string>; byName: Map<string, string> };
@@ -560,7 +561,7 @@ export function resolveDraftIdentity(
 }
 ```
 
-Then rewrite `importReceipt` to:
+Then in `app/actions/receipt.ts`, add `import { resolveDraftIdentity } from "@/lib/receipt-match";` and rewrite `importReceipt` to:
 1. **Dual-dedupe:** unless `force`, `findFirst` a `ReceiptImport` whose `fingerprint` is in `[input.fingerprint, input.legacyFingerprint]`; if found → `{ duplicate, when }`.
 2. Build lookup maps up front: `byName` from `db.item.findMany({select:{id,name}})` (keyed by `normalizeName`), `byBarcode` from `db.barcode.findMany({select:{code,itemId}})`.
 3. Inside `db.$transaction`, iterate drafts. For each: `resolveDraftIdentity`. On `reuse` → use itemId; if `attachBarcode` and not already present (check a per-run `seenBarcodes` set + `byBarcode`) → `tx.barcode.create` (create-if-absent; on `create`, also add to `seenBarcodes` and `byBarcode`). On `create` → create item (+ category via `guessCategory`), add to `byName`; if `attachBarcode` → create the barcode row and register it. **Never** bare-create a barcode whose code is already registered (skip) — this makes multi-buy of the same barcode safe.
@@ -606,7 +607,7 @@ First read the current `addPurchase` in `app/actions/purchases.ts` to match its 
 ```ts
 // tests/manual-barcode.test.ts
 import { describe, it, expect } from "vitest";
-import { resolveManualIdentity } from "@/app/actions/purchases";
+import { resolveManualIdentity } from "@/lib/purchase-match";
 
 const ctx = () => ({
   byBarcode: new Map<string, string>([["05000159407236", "item-pop"]]),
@@ -643,9 +644,10 @@ describe("resolveManualIdentity", () => {
 Run: `cmd /c "npx vitest run tests/manual-barcode.test.ts"`
 Expected: FAIL — `resolveManualIdentity` not exported.
 
-- [ ] **Step 3: Implement** in `app/actions/purchases.ts`:
+- [ ] **Step 3: Create the pure resolver** in a NEW file `lib/purchase-match.ts` (again, not in the `"use server"` action file). `addPurchase` in the action imports `resolveManualIdentity` from it.
 
 ```ts
+// lib/purchase-match.ts
 import { resolveItem, normalizeName, type ItemRef } from "@/lib/items";
 
 export type ManualCtx = { byBarcode: Map<string, string>; existing: ItemRef[] };
@@ -704,7 +706,7 @@ Design: extract the orphan decision into a pure helper `shouldDeleteOrphan(remai
 ```ts
 // tests/orphan-prune.test.ts
 import { describe, it, expect } from "vitest";
-import { shouldDeleteOrphan } from "@/app/actions/purchases";
+import { shouldDeleteOrphan } from "@/lib/purchase-match";
 
 describe("shouldDeleteOrphan", () => {
   it("deletes when no purchases and no barcodes", () => {
@@ -721,7 +723,7 @@ describe("shouldDeleteOrphan", () => {
 
 - [ ] **Step 2: Run → fail.** `cmd /c "npx vitest run tests/orphan-prune.test.ts"`
 
-- [ ] **Step 3: Implement** — add to `app/actions/purchases.ts`:
+- [ ] **Step 3: Implement** — add `shouldDeleteOrphan` to `lib/purchase-match.ts` (pure) and call it from `deletePurchase` in `app/actions/purchases.ts`:
 
 ```ts
 /** An item is auto-removed only when it has no purchases AND no taught barcodes,
