@@ -79,8 +79,10 @@ const TASKS=[
  {id:9, n:"Live end-to-end proof", d:"real receipt on the phone → 'Total matches ✓'", s:"done"}
 ];
 const NEXT=[
- {n:"Check barcode capture", d:"confirm Carrefour receipt barcodes pass validation & actually store, so auto-linking works (from live test feedback)", tag:"looking"},
- {n:"Show the barcode", d:"surface each item's barcode on Prices/review so manual linking is usable & verifiable", tag:"queued"},
+ {n:"Barcode capture fixed", d:"dropped an over-strict check-digit rule that was rejecting real Carrefour codes; barcodes now store & auto-link (verified live)", tag:"done"},
+ {n:"Trip date + quantity", d:"import auto-detects the receipt date (editable) & quantity shows in the review + Prices", tag:"done"},
+ {n:"Start-fresh reset", d:"one-tap wipe-all-data (keeps your PIN), confirmation-gated", tag:"done"},
+ {n:"Show the barcode", d:"surface each item's barcode so manual linking is easy to verify", tag:"queued"},
  {n:"Merge tool", d:"fold already-split duplicate items together (e.g. popcorn ↔ A.G PCORN)", tag:"queued"},
  {n:"Camera scanning", d:"scan instead of type — needs an on-device iOS test first", tag:"last"},
  {n:"Idea · scan → price story", d:"in-store: scan a barcode → app opens that item's Prices/price history instantly", tag:"idea"}
@@ -96,10 +98,10 @@ document.getElementById("list").innerHTML=TASKS.map(t=>`
     <div class="st">${t.s==="done"?"Done":t.s==="active"?"Building":"Queued"}</div>
   </div>`).join("");
 document.getElementById("nextlist").innerHTML=NEXT.map(t=>`
-  <div class="task todo">
-    <div class="ic">${t.tag==="idea"?"💡":t.tag==="looking"?"◐":"◦"}</div>
+  <div class="task ${t.tag==="done"?"done":"todo"}">
+    <div class="ic">${t.tag==="done"?"✓":t.tag==="idea"?"💡":t.tag==="looking"?"◐":"◦"}</div>
     <div class="n">${t.n}<small>${t.d}</small></div>
-    <div class="st">${t.tag}</div>
+    <div class="st">${t.tag==="done"?"Done":t.tag}</div>
   </div>`).join("");
 </script>
 <script src="theme.js"></script>
