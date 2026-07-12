@@ -5,6 +5,7 @@ import PriceCard from "@/app/components/PriceCard";
 import ShelfCheck from "@/app/components/ShelfCheck";
 import PriceItemPicker from "@/app/components/PriceItemPicker";
 import BarcodeLine from "@/app/components/BarcodeLine";
+import ItemCategoryPicker from "@/app/components/ItemCategoryPicker";
 
 // Reads are per-request against the DB — never at build time.
 export const dynamic = "force-dynamic";
@@ -80,6 +81,11 @@ export default async function PricesPage({
     },
   });
 
+  const categories = await db.category.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   const purchases = selected?.purchases ?? [];
   const barcodeCodes = (selected?.barcodes ?? []).map((b) => b.code);
   const unit = primaryUnit(purchases);
@@ -104,6 +110,15 @@ export default async function PricesPage({
       {/* Item identity — shows regardless of whether the item has purchases yet
           (barcode-only items are deliberately kept — break-spec F2). */}
       <BarcodeLine codes={barcodeCodes} />
+
+      {/* Re-file this item's category — page level, so it shows even with no purchases. */}
+      {selected && (
+        <ItemCategoryPicker
+          itemId={selected.id}
+          categoryId={selected.categoryId}
+          categories={categories}
+        />
+      )}
 
       {stats ? (
         <>
