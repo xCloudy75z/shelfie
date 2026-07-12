@@ -12,6 +12,17 @@
 
 ---
 
+## Execution order (break-plan fix — READ THIS FIRST)
+
+The task numbers below are logical groupings, but they MUST be executed in this order/grouping so the tree compiles at every commit. Changing `guessCategory` to return `string | null` breaks its **three** callers (`receipt.ts`, `purchases.ts`, `ReceiptImport.tsx`), so that change must land in the **same commit** as all three caller fixes — never commit Task 1 alone (its intermediate tree does not typecheck).
+
+1. **Task 2** — `lib/category-db.ts` (compiles standalone).
+2. **Task 3** — schema + migration + `prisma generate` for `discountFils` (no code uses it yet; tree stays green).
+3. **COMBINED green commit** = Task 1 (guessCategory→null + helpers + tests) **＋** Task 4 (all steps) **＋** Task 5 (purchases.ts). Make ALL these edits, THEN run `cmd /c "npx vitest run tests/categories.test.ts"` + `cmd /c "npm run typecheck"` + `cmd /c "npm run build"` + `cmd /c "npm test"` (first point the whole tree compiles), THEN commit ONCE. The per-task "typecheck (clean)" gate lines inside Tasks 1/4/5 are **superseded** by this single combined gate.
+4. **Task 6** → **Task 7** → **Task 8** → **Task 9** (note its Step-1 fix) → **Task 10** → **Task 11**, each with its own gate + commit as written.
+
+---
+
 ## File Structure
 - **Modify** `lib/categories.ts` — `guessCategory` → `string | null`; add `normalizeCategoryName`, `isReservedCategoryName`. (PURE — stays client-safe; it's imported by `ReceiptImport.tsx`. Do NOT add DB code here.)
 - **Create** `lib/category-db.ts` — server-only `findOrCreateCategory(client, name)` (case-insensitive find-or-create). Takes a Prisma client or tx.
@@ -215,7 +226,7 @@ Then in the `tx.receiptImport.create` call, add `discountFils` to `data`:
 
 Add the import at the top: `import { findOrCreateCategory } from "@/lib/category-db";` (keep `guessCategory` import).
 
-- [ ] **Step 4: Pass paidFils from the client** — in `ReceiptImport.tsx` `save()`, in the `importReceipt({ ... })` call, add `paidFils: parsed.paidFils,` (alongside `grandTotalFils`). And fix the dead review-category to compile with the new null return: change `category: guessCategory(it.name),` to `category: guessCategory(it.name) ?? "",`.
+- [ ] **Step 4: Pass paidFils from the client** — in `ReceiptImport.tsx` `save()`, in the `importReceipt({ ... })` call, add `paidFils: parsed.paidFils,` (alongside `grandTotalFils`). Fix the dead review-category to compile with the new null return: change `category: guessCategory(it.name),` to `category: guessCategory(it.name) ?? "",`. **Also relabel the review `<select>`** (break-plan MINOR) so a `""` value reads "Uncategorized": in the options `.map((c) => ...)` render the label as `{c === "" ? "Uncategorized" : c}`, and make the option list include `""` when `row.category === ""` (mirror the existing `PRESET_CATEGORIES.includes(row.category) ? PRESET_CATEGORIES : [row.category, ...PRESET_CATEGORIES]` pattern — with `row.category === ""` that yields `["", ...PRESET_CATEGORIES]`, so just fix the label).
 
 - [ ] **Step 5: Typecheck + build** — `cmd /c "npm run typecheck"` then `cmd /c "npm run build"` (clean).
 - [ ] **Step 6: Commit** — msg `feat(accuracy): capture receipt discount at import; null-safe category`.
@@ -395,7 +406,7 @@ Import it at the top.
 
 **Files:** Create `app/components/ItemCategoryPicker.tsx`; Modify `app/(app)/prices/page.tsx`.
 
-- [ ] **Step 1: Fetch categories on Prices** — in `prices/page.tsx`, add `const categories = await db.category.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });` and select the item's `categoryId` (extend the `selected` query's `select`/`include` to include `categoryId: true`).
+- [ ] **Step 1: Fetch categories on Prices** — in `prices/page.tsx`, add `const categories = await db.category.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });`. **Do NOT touch the `selected` query** (break-plan MINOR): it uses `include`, so all Item scalars — including `categoryId` (`string | null`) — are already returned; `selected!.categoryId` is directly available. (Adding `categoryId: true` to an `include` is a TS error — `include` accepts only relation fields.)
 
 - [ ] **Step 2: Create the component** — `app/components/ItemCategoryPicker.tsx`, `"use client"`, props `{ itemId: string; categoryId: string | null; categories: { id: string; name: string }[] }`. A labelled `<select>` with an "Uncategorized" option (value `""` → null) + each category; current value preselected; on change calls `setItemCategory(itemId, value || null)` from `@/app/actions/categories`, then `router.refresh()` + toast. Token styling.
 

@@ -129,9 +129,9 @@ const PHASES=[
     {n:"Design approved", s:"done"},
     {n:"Spec + published", s:"done"},
     {n:"Break the spec", s:"done"},
-    {n:"Plan (TDD)", s:"active"},
-    {n:"Break the plan", s:"todo"},
-    {n:"Build", s:"todo"},
+    {n:"Plan (TDD)", s:"done"},
+    {n:"Break the plan", s:"done"},
+    {n:"Build", s:"active"},
     {n:"Break the build", s:"todo"},
     {n:"Live verify", s:"todo"}
   ],
@@ -141,7 +141,10 @@ const PHASES=[
       "F2 (Major): a restore could leave a ‘phantom’ discount behind — now cleaned up on restore.",
       "F3 (Major): a hidden 3rd place using the old category default would have failed the build — caught before coding.",
       "F4 (Major): someone naming a category ‘Uncategorized’ would have merged two buckets — that name is now reserved.",
-      "F5/F8 + more: case-different duplicate categories prevented; every budget figure now uses what you paid."]}
+      "F5/F8 + more: case-different duplicate categories prevented; every budget figure now uses what you paid."]},
+    {stage:"🛡️ Break the PLAN", verdict:"1 Major ordering fix + 2 minor", items:[
+      "Major: the build steps were sequenced so an early commit wouldn’t compile — resequenced so every save builds cleanly.",
+      "2 minor code fixes caught before coding (an invalid database field select; a blank dropdown option now labelled ‘Uncategorized’)."]}
   ]},
 
  {id:"phaseB", title:"Phase B · Merge tool", status:"queued",

@@ -22,7 +22,7 @@ Migration: hand-authored `prisma/migrations/<n>_receipt_discount/migration.sql` 
 ### 1.3 Capture at import
 - `parseReceipt` already yields `paidFils` (the amount actually paid, after discount) and `grandTotalFils` (sum of shelf lines). The review UI already computes a display-only discount from these.
 - `importReceipt` input gains `paidFils?: number | null`. The client (`ReceiptImport.tsx` `save()`) passes `parsed.paidFils`.
-- Server computes `discountFils = (grandTotalFils != null && paidFils != null && paidFils < grandTotalFils) ? grandTotalFils − paidFils : 0` (integer, ≥ 0), and stores it plus `monthKey` on the `ReceiptImport` row. Purchases still store shelf `lineFils` — unchanged.
+- Server computes `discountFils = (grandTotalFils != null && paidFils != null && paidFils < grandTotalFils) ? grandTotalFils − paidFils : 0` (integer, ≥ 0), and stores it on the `ReceiptImport` row (`discountFils` only — no `monthKey`, per §1.2/F1). Purchases still store shelf `lineFils` — unchanged.
 
 ### 1.4 Month page
 - `shelfSpentFils = Σ purchase.totalFils` (today's value; rename the local from `spentFils`).
