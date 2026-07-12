@@ -8,6 +8,7 @@ import EditablePurchases, {
   type EditablePurchaseRow,
 } from "@/app/components/EditablePurchases";
 import BackupRestore from "@/app/components/BackupRestore";
+import CategoryManager from "@/app/components/CategoryManager";
 import VersionBar from "@/app/components/VersionBar";
 
 // Reads are per-request against the DB — never at build time.
@@ -51,7 +52,7 @@ export default async function MonthPage({
 
   // Everything for the selected Dubai month, plus this month's budget (if any)
   // and the last-backed-up timestamp for the "Your data" card.
-  const [purchases, thisBudget, settings] = await Promise.all([
+  const [purchases, thisBudget, settings, categoriesRaw] = await Promise.all([
     db.purchase.findMany({
       where: { monthKey: selected },
       orderBy: { purchasedAt: "desc" },
@@ -59,8 +60,13 @@ export default async function MonthPage({
     }),
     db.budget.findUnique({ where: { monthKey: selected } }),
     db.settings.findUnique({ where: { id: 1 }, select: { lastBackupAt: true } }),
+    db.category.findMany({
+      select: { id: true, name: true, _count: { select: { items: true } } },
+      orderBy: { name: "asc" },
+    }),
   ]);
   const lastBackupAt = settings?.lastBackupAt?.toISOString() ?? null;
+  const categories = categoriesRaw.map((c) => ({ id: c.id, name: c.name, count: c._count.items }));
 
   const shelfSpentFils = purchases.reduce((s, p) => s + p.totalFils, 0);
   const importIds = [...new Set(purchases.map((p) => p.importId).filter((x): x is string => !!x))];
@@ -397,6 +403,12 @@ export default async function MonthPage({
           </button>
         </div>
       </form>
+
+      {/* Manage categories */}
+      <div className="card">
+        <div className="card-kicker">Categories</div>
+        <CategoryManager categories={categories} />
+      </div>
 
       {/* Back up / restore your data */}
       <div className="card">
