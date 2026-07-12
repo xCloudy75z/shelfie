@@ -4,7 +4,12 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { dubaiToday } from "@/lib/dates";
 import { validateBackup, type BackupData, type BackupCounts } from "@/lib/backup";
-import { buildBackup, markBackedUp, restoreBackup } from "@/app/actions/backup";
+import {
+  buildBackup,
+  markBackedUp,
+  resetAllData,
+  restoreBackup,
+} from "@/app/actions/backup";
 
 // Present an ISO instant in Dubai time, or a friendly "never" line.
 function formatLastBackup(iso: string | null): string {
@@ -24,7 +29,10 @@ type Flow =
   | { step: "confirm"; data: BackupData; counts: BackupCounts }
   // Restore done — we hold the pre-restore snapshot so Undo can replay it.
   | { step: "restored"; snapshot: BackupData }
-  | { step: "undone" };
+  | { step: "undone" }
+  // "Start fresh" — waiting for the user to confirm wiping everything.
+  | { step: "reset-confirm" }
+  | { step: "reset-done" };
 
 const btnBase: React.CSSProperties = {
   width: "100%",
@@ -45,7 +53,9 @@ export default function BackupRestore({
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState<"" | "backup" | "restore" | "undo">("");
+  const [busy, setBusy] = useState<
+    "" | "backup" | "restore" | "undo" | "reset"
+  >("");
   const [error, setError] = useState<string | null>(null);
   const [flow, setFlow] = useState<Flow>({ step: "idle" });
 
@@ -133,6 +143,21 @@ export default function BackupRestore({
       router.refresh();
     } catch {
       setError("Undo failed.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function doReset() {
+    setBusy("reset");
+    setError(null);
+    try {
+      await resetAllData();
+      setFlow({ step: "reset-done" });
+      router.refresh();
+    } catch {
+      setError("Couldn't clear your data. Please try again.");
+      setFlow({ step: "idle" });
     } finally {
       setBusy("");
     }
@@ -298,6 +323,93 @@ export default function BackupRestore({
           Undone ✓
         </p>
       )}
+
+      {/* Danger zone — start fresh by wiping all data. Visually separated. */}
+      <div
+        style={{
+          marginTop: 22,
+          paddingTop: 18,
+          borderTop: "1px solid var(--line)",
+        }}
+      >
+        {flow.step !== "reset-confirm" && flow.step !== "reset-done" && (
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setFlow({ step: "reset-confirm" });
+            }}
+            disabled={!!busy}
+            style={{
+              ...btnBase,
+              background: "transparent",
+              color: "var(--red)",
+              border: "1px solid var(--red)",
+              opacity: busy ? 0.6 : 1,
+            }}
+          >
+            Start fresh — delete all data
+          </button>
+        )}
+
+        {/* Confirm the irreversible wipe. */}
+        {flow.step === "reset-confirm" && (
+          <div
+            style={{
+              padding: 14,
+              border: "1px solid var(--red)",
+              borderRadius: 14,
+              background: "var(--red-soft)",
+            }}
+          >
+            <p
+              style={{ fontSize: 13.5, color: "var(--ink)", margin: "0 0 12px" }}
+            >
+              This permanently deletes all purchases, items, budgets and
+              imported receipts. Your PIN stays. This can&rsquo;t be undone. If
+              you want a safety copy, tap <strong>Back up now</strong> first.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                onClick={doReset}
+                disabled={busy === "reset"}
+                style={{
+                  ...btnBase,
+                  background: "var(--red)",
+                  color: "#fff",
+                  border: 0,
+                  cursor: busy === "reset" ? "wait" : "pointer",
+                  opacity: busy === "reset" ? 0.6 : 1,
+                }}
+              >
+                {busy === "reset" ? "Clearing…" : "Delete everything"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setFlow({ step: "idle" })}
+                disabled={busy === "reset"}
+                style={btnBase}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {flow.step === "reset-done" && (
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              fontWeight: 700,
+              color: "var(--ink)",
+            }}
+          >
+            Data cleared — starting fresh ✓
+          </p>
+        )}
+      </div>
     </div>
   );
 }

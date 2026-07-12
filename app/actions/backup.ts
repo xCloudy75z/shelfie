@@ -181,3 +181,32 @@ export async function restoreBackup(data: BackupData): Promise<RestoreResult> {
 
   return { ok: true, snapshot, counts: v.counts };
 }
+
+/**
+ * Wipe ALL of the owner's grocery data to start fresh.
+ *
+ * IRREVERSIBLE — there is no built-in undo. Deletes every purchase, barcode,
+ * imported receipt, item and budget. Deliberately PRESERVES:
+ *  - `Settings` (keeps the PIN + lastBackupAt), and
+ *  - `Category` (preset reference data stays).
+ *
+ * Deletions run in one transaction in FK-safe order: purchases (reference
+ * items + imports) → barcodes (reference items) → imported receipts → items →
+ * budgets (stand alone). Encourage the user to "Back up now" first if they want
+ * a safety copy.
+ */
+export async function resetAllData(): Promise<{ ok: true }> {
+  await db.$transaction(async (tx) => {
+    await tx.purchase.deleteMany({});
+    await tx.barcode.deleteMany({});
+    await tx.receiptImport.deleteMany({});
+    await tx.item.deleteMany({});
+    await tx.budget.deleteMany({});
+  });
+
+  revalidatePath("/month");
+  revalidatePath("/prices");
+  revalidatePath("/log");
+
+  return { ok: true };
+}
