@@ -7,7 +7,7 @@
 - **GitHub repo (public):** https://github.com/xCloudy75z/shelfie
 - **Local path:** `C:\Users\games\Documents\xCloudy\IDEAS\Shelfie`
 - **Owner:** Abdulla (UAE). Non-technical founder; provides direction, AI implements.
-- **Status at time of writing:** Core app (Plan 1) fully shipped & live. Receipt import (Plan 2) parser/flow built; **PDF reading is currently broken** (see §15 — the receipt-import debugging saga). Everything else works.
+- **Status at time of writing:** Core app (Plan 1) fully shipped & live. **Receipt import (Plan 2) now works end-to-end on Vercel** (server-side PDF read fixed 2026-07-12 — see §15.5). **Receipt Import v2** (barcode identity, per-item offers, accuracy self-check) is designed and awaiting approval — see `docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`.
 
 ---
 
@@ -57,9 +57,10 @@ It serves three real moments:
 - **Auto-update + version stamp** card; **installable PWA** with real PNG icons.
 - All data scoped to one owner; Neon Postgres (Frankfurt); auto-deploy on every push to `main`.
 - **54 unit tests** green; three code-review passes (one adversarial pre-build, one on the lib foundation, one final).
+- **Receipt PDF import** — **working end-to-end on Vercel** (server-side Node read; fixed 2026-07-12, see §15.5). Upload the Carrefour PDF → server parses → review list with a green "Total matches ✓" → save.
 
 ### ❌ Broken / incomplete
-- **Receipt PDF import** — the parser is correct and PROVEN (it parsed the owner's real receipt: 28 items, correct prices, total matched, in ~2s under Node). But *reading the PDF in the browser fails on iOS Safari* across every approach tried, and the *server-side* fallback (deployed) is **also currently failing** ("Couldn't read that PDF"). See §15 for the full saga and the exact next diagnostic step. **This is the single open problem.**
+- **None currently.** The last open problem — receipt import — was fixed on 2026-07-12 (§15.5). The next planned work is **Receipt Import v2** (barcode identity, per-item offers, accuracy self-check): designed and awaiting owner approval (`docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`).
 
 ---
 
@@ -372,11 +373,17 @@ vercel logs <deployment-url>     # then trigger an import to see the runtime err
 - The problem is purely **pdf.js text extraction in the target runtime.** On-device (iOS Safari) is a WebKit dead-end (parked). Server-side (Node) is the chosen path and *works locally*; it just needs the **Vercel serverless environment** sorted (read the logs, adjust the font/cmap config).
 - Privacy constraint still applies: the server reads the PDF in memory and **stores nothing** but item names + prices.
 
+### 15.5 RESOLVED (2026-07-12) — server extraction works on Vercel
+The exact Vercel failures were captured from the live function logs (the old `catch` swallowed them; a one-line `console.error` surfaced them). Two runtime-specific crashes — each reproduced locally by **hiding `@napi-rs/canvas` to simulate Vercel's Linux image**, then fixed:
+1. **`ReferenceError: DOMMatrix is not defined`** at pdf.js module load. pdf.js v6's Node build gets `DOMMatrix`/`Path2D` from the optional native `@napi-rs/canvas`, which isn't reliably present in Vercel's serverless function. **Fix:** install tiny pure-JS `DOMMatrix`/`Path2D` shims *before* importing pdf.js (receipt text extraction never uses the matrix math). Commit `2228103`.
+2. **`Setting up fake worker failed: Cannot find module …/pdf.worker.mjs`.** In Node, pdf.js loads its worker via an import marked `webpackIgnore`/`@vite-ignore`, so the bundler skips the file and it's absent on Vercel. **Fix:** import the worker with a plain literal specifier (so it's traced into the bundle) and set `globalThis.pdfjsWorker` so pdf.js uses it directly. Commit `c93c10c`.
+**Verified live:** a real Carrefour receipt on the owner's iPhone → 30 items → green "Total matches ✓"; the import/dedupe/review flow works. The next evolution is **Receipt Import v2** (barcode identity + offers) — see `docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`.
+
 ---
 
 ## 16. Known issues & recommended next steps
 
-1. **Receipt import (only open item):** get `parseReceiptUpload` working on Vercel — read the function logs, then most likely remove `useSystemFonts` and supply cmap/standard-font data from disk (see §15.3). Verify end-to-end with a real receipt on the live URL.
+1. **Receipt import — DONE (2026-07-12):** `parseReceiptUpload` works on Vercel (see §15.5). The next step is **Receipt Import v2** — barcode-based item identity, per-item offers, and an accuracy self-check — designed and awaiting approval (`docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`).
 2. **On-device receipt reading (parked):** revisit later as a privacy upgrade only if a reliable iOS-Safari pdf.js path is found (or a different in-browser PDF text approach). `lib/receipt-extract.ts` + `public/pdfjs/` assets are retained for that.
 3. **Plan 3 (polish, not started):** item-merge tool (fold accidental duplicate items together), offline stats cache, deeper PWA.
 4. **Cosmetic:** receipt item names come from Carrefour as short codes (e.g. "AL MARAI MILK FF 1"); a rename/alias nicety could help (the review screen already lets the user edit names before saving).

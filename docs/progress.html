@@ -47,9 +47,9 @@
   <div class="wrap">
     <div class="nav"><a href="index.html">← Hub</a><a href="spec.html">Spec</a><a href="review.html">🛡️ Review</a><a href="mockup.html">📱 Mockup</a></div>
     <h1>Build Progress</h1>
-    <p class="sub">Plan 2 · Carrefour receipt import. <span class="live"><i></i>live · auto-refreshes every 60s</span></p>
+    <p class="sub">Receipt import — now working end-to-end on the live app. <span class="live"><i></i>live · auto-refreshes every 60s</span></p>
 
-    <div class="done-banner">✅ Plan 1 — the Core: all 16 tasks shipped &amp; live at <a href="https://shelfie-gamma-seven.vercel.app" target="_blank">shelfie-gamma-seven.vercel.app</a></div>
+    <div class="done-banner">✅ Plan 1 (Core · 16 tasks) &amp; Plan 2 (Carrefour receipt import) — both shipped &amp; live at <a href="https://shelfie-gamma-seven.vercel.app" target="_blank">shelfie-gamma-seven.vercel.app</a></div>
 
     <div class="barwrap">
       <div class="top"><span style="font-weight:700">Receipt import (Plan 2)</span><span class="pct" id="pct">0%</span></div>
@@ -59,20 +59,32 @@
 
     <div id="list"></div>
 
-    <p class="foot">Upload the emailed Carrefour PDF → parsed on your device → review → save the whole trip.<br>Built test-first by fresh Opus agents; the real layout was confirmed from two of your actual receipts (privacy-safe).</p>
+    <h2 style="font-size:20px;margin:26px 0 4px">Next — Receipt Import v2</h2>
+    <p class="sub" style="margin-bottom:10px">Barcode identity, per-item offers &amp; an accuracy self-check. <b>Designed — <a href="receipt-v2-spec.html" style="color:var(--green-strong);font-weight:800">read the plan</a> — awaiting your approval.</b></p>
+    <div id="nextlist"></div>
+
+    <p class="foot">Upload the emailed Carrefour PDF → read on the server (reliable) → review → save the whole trip.<br>Built test-first by fresh Opus agents; verified on the real Vercel app with a real receipt.</p>
   </div>
 
 <script>
 const TASKS=[
  {id:1, n:"Receipt parser", d:"lines → items · qty · unit price · line total; grand-total self-check", s:"done"},
- {id:2, n:"On-device PDF read", d:"pdf.js coordinate extraction — receipt never leaves your phone", s:"done"},
+ {id:2, n:"PDF read", d:"pdf.js coordinate extraction of the Tax-Invoice layout", s:"done"},
  {id:3, n:"Import + dedupe", d:"create items/purchases · fingerprint blocks double-imports", s:"done"},
  {id:4, n:"Review screen", d:"editable draft list, total-match badge, save the trip", s:"done"},
  {id:5, n:"Pay-cycle month (25th → 24th)", d:"budget & buckets follow the pay cycle, not the calendar", s:"done"},
- {id:6, n:"Fix: receipt read hang", d:"ship pdf.js cmaps/fonts for Arabic text + timeout so it never stalls", s:"done"},
- {id:7, n:"Import diagnostics", d:"show exactly what the phone read, to pinpoint the 'couldn't read' failure", s:"done"},
- {id:8, n:"On-device iOS read — parked", d:"pdf.js hits un-reproducible iOS-Safari WebKit bugs; revisit later as a privacy upgrade", s:"todo"},
- {id:9, n:"Server-side receipt read (reliable)", d:"read the PDF in Node (proven), discard it, save only items+prices", s:"active"}
+ {id:6, n:"Server-side read (reliable)", d:"read the PDF in Node, discard it, save only items+prices", s:"done"},
+ {id:7, n:"Fix: DOMMatrix on Vercel", d:"pure-JS shim so pdf.js loads without the native canvas package", s:"done"},
+ {id:8, n:"Fix: worker on Vercel", d:"pre-load pdf.js worker so it's bundled into the serverless function", s:"done"},
+ {id:9, n:"Live end-to-end proof", d:"real receipt on the phone → 'Total matches ✓'", s:"done"}
+];
+const NEXT=[
+ {n:"Barcode capture", d:"store each product's barcode as its true identity"},
+ {n:"Two-way matching", d:"receipt + optional manual barcode auto-link the same product"},
+ {n:"Per-item ‘on offer’", d:"promo lines excluded from your best-price benchmark"},
+ {n:"Accuracy self-check", d:"flag any row with no barcode before it saves"},
+ {n:"Merge tool (later)", d:"fold together duplicates you've already built up"},
+ {n:"Camera scanning (last)", d:"scan a barcode instead of typing — after an on-device test"}
 ];
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
@@ -83,6 +95,12 @@ document.getElementById("list").innerHTML=TASKS.map(t=>`
     <div class="ic">${t.s==="done"?"✓":t.s==="active"?"◐":t.id}</div>
     <div class="n">${t.n}<small>${t.d}</small></div>
     <div class="st">${t.s==="done"?"Done":t.s==="active"?"Building":"Queued"}</div>
+  </div>`).join("");
+document.getElementById("nextlist").innerHTML=NEXT.map(t=>`
+  <div class="task todo">
+    <div class="ic">◦</div>
+    <div class="n">${t.n}<small>${t.d}</small></div>
+    <div class="st">Queued</div>
   </div>`).join("");
 </script>
 <script src="theme.js"></script>
