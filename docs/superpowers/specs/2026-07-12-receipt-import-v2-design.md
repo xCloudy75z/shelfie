@@ -165,7 +165,7 @@ An Opus skeptical-engineer review attacked this design against the live code. 2 
 - **M11 — Manual barcode + fuzzy name.** **Resolution:** a new barcode whose typed name *fuzzy*-matches an existing item still shows the "same as X?" confirm; on "yes" the barcode attaches to X, on "no" a new item is created with the barcode. (§7.)
 
 **Minor**
-- **M12 — Check-digit.** Validate the EAN/UPC mod-10 check digit (not just length) to reject glyph-split/truncated codes. (§5.)
+- **M12 — Check-digit. ⚠️ RESCINDED (2026-07-12, live testing).** We initially validated the EAN/UPC mod-10 check digit. But real Carrefour receipt barcodes (e.g. the 12-digit `071727355039`) do NOT satisfy it, so the rule silently discarded **every** barcode and made the whole feature inert. Barcode capture is now **lenient**: any 8–14 digit run is accepted and canonicalised to 14 digits (`lib/barcode.ts`). Trade-off accepted: we no longer catch a glyph-split code via the check digit, but the feature actually works. (Fix commit `9e75d4d`.)
 - **M13 — Recurring no-barcode items.** Only flag a no-barcode row when it **doesn't** match an existing item by name, so known weighed produce / carrier bags aren't re-flagged every import. (§8.)
 - **M14 — Migration.** Ship `2_add_barcode` via `prisma migrate deploy` in `vercel-build` (already the pattern); confirm no live schema drift first.
 - **M15 — Normalized-name collision.** Note that "exact name match" is normalized equality; two distinct unique names can normalise alike (rare, single-user). Attach barcode to the first match; acceptable.
