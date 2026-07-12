@@ -62,6 +62,7 @@ export default function PurchaseForm({ items, categories }: Props) {
   const [qty, setQty] = useState("1");
   const [store, setStore] = useState("Carrefour");
   const [category, setCategory] = useState("");
+  const [barcode, setBarcode] = useState("");
   const [onOffer, setOnOffer] = useState(false);
 
   const [confirm, setConfirm] = useState<Confirm | null>(null);
@@ -124,6 +125,7 @@ export default function PurchaseForm({ items, categories }: Props) {
     setQty("1");
     setStore("Carrefour");
     setCategory("");
+    setBarcode("");
     setOnOffer(false);
   }
 
@@ -146,6 +148,7 @@ export default function PurchaseForm({ items, categories }: Props) {
           store,
           onOffer,
           categoryName: category || undefined,
+          barcode: barcode.trim() || null,
           ...extra,
         });
       } catch {
@@ -343,6 +346,22 @@ export default function PurchaseForm({ items, categories }: Props) {
             </select>
           </div>
         </div>
+
+        <label htmlFor="pf-barcode" style={s.label}>
+          Barcode <span style={{ color: "var(--ink-faint)" }}>· optional</span>
+        </label>
+        <input
+          id="pf-barcode"
+          inputMode="numeric"
+          value={barcode}
+          onChange={(e) => setBarcode(e.target.value)}
+          placeholder="Scan or type the product barcode"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          style={s.field}
+        />
 
         <div style={s.toggleWrap}>
           <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>

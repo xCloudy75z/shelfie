@@ -6,6 +6,8 @@ import { parsePriceFils } from "@/lib/money";
 import { normalizeName, resolveItem } from "@/lib/items";
 import { dubaiMonthKey } from "@/lib/dates";
 import { guessCategory } from "@/lib/categories";
+import { canonicalizeBarcode } from "@/lib/barcode";
+import { resolveManualIdentity, shouldDeleteOrphan } from "@/lib/purchase-match";
 
 export type AddPurchaseInput = {
   itemName: string;
@@ -15,6 +17,8 @@ export type AddPurchaseInput = {
   store: string;
   onOffer: boolean;
   categoryName?: string;
+  /** Optional product barcode typed by the user (barcode-first identity). */
+  barcode?: string | null;
   /** Set when the user confirmed a suggested item is the same thing. */
   chosenItemId?: string;
   /** Set when the user rejected the suggestion — create a brand-new item. */
@@ -43,33 +47,70 @@ export async function addPurchase(
   const totalFils = parsePriceFils(input.priceAed);
   if (totalFils === null) return { error: "Enter a valid price above 0" };
 
+  // A provided-but-unrecognised barcode canonicalises to null and is treated as
+  // "no barcode" — it never blocks the save, it just doesn't drive identity.
+  const canon = canonicalizeBarcode(input.barcode);
+
+  // Barcode ownership (code -> itemId) for barcode-first identity.
+  const barcodeRows = await db.barcode.findMany({
+    select: { code: true, itemId: true },
+  });
+  const byBarcode = new Map(barcodeRows.map((b) => [b.code, b.itemId]));
+
   const existing = await db.item.findMany({ select: { id: true, name: true } });
-  const res = resolveItem(input.itemName, existing);
 
   let itemId: string;
+  // Canonical barcode to attach to `itemId` once resolved (null = attach nothing).
+  let attachBarcode: string | null = null;
+
   if (input.chosenItemId) {
-    // User confirmed the suggestion is the same item.
+    // User confirmed the suggestion is the same item; carry the barcode onto it.
     itemId = input.chosenItemId;
-  } else if (res.kind === "exact") {
-    itemId = res.item.id;
-  } else if (res.kind === "suggest" && !input.confirmNewItem) {
-    // Pause and ask before creating a possible duplicate. Write nothing.
-    return { needsConfirm: true, suggestion: res.item };
+    attachBarcode = canon;
+  } else if (input.confirmNewItem) {
+    // User rejected the suggestion → brand-new item carrying the barcode.
+    itemId = await createItem(input);
+    attachBarcode = canon;
   } else {
-    const catName = input.categoryName?.trim() || guessCategory(input.itemName);
-    const cat = await db.category.upsert({
-      where: { name: catName },
-      update: {},
-      create: { name: catName },
-    });
-    const item = await db.item.create({
-      data: {
-        name: input.itemName.trim(),
-        normalized: normalizeName(input.itemName),
-        categoryId: cat.id,
-      },
-    });
-    itemId = item.id;
+    // First pass — resolve identity barcode-first, then owner-name, then new.
+    const itemsOwningBarcode = new Set(barcodeRows.map((b) => b.itemId));
+    const res = resolveManualIdentity(
+      { name: input.itemName, barcode: canon },
+      { byBarcode, existing, itemsOwningBarcode },
+    );
+    if (res.action === "reuse") {
+      itemId = res.itemId;
+      // When matched BY barcode the code is already owned by this item, and the
+      // typed name is ignored for identity — nothing to attach.
+      if (!res.matchedByBarcode) attachBarcode = res.attachBarcode ?? null;
+    } else if (res.action === "confirm") {
+      // Pause and ask before creating a possible duplicate. Write nothing; the
+      // form re-submits (barcode still in its state) with chosen/new.
+      const sug = existing.find((e) => e.id === res.suggestItemId);
+      if (sug) return { needsConfirm: true, suggestion: sug };
+      // Suggestion vanished between reads → fall through to a fresh new item.
+      itemId = await createItem(input);
+      attachBarcode = res.attachBarcode;
+    } else if (res.action === "create") {
+      itemId = await createItem(input);
+      attachBarcode = res.attachBarcode;
+    } else {
+      // action === "name": no usable barcode → today's name-only resolution,
+      // unchanged from before this feature.
+      const r = resolveItem(input.itemName, existing);
+      if (r.kind === "exact") {
+        itemId = r.item.id;
+      } else if (r.kind === "suggest") {
+        return { needsConfirm: true, suggestion: r.item };
+      } else {
+        itemId = await createItem(input);
+      }
+    }
+  }
+
+  // Attach the barcode only when it isn't already owned (this run or in the DB).
+  if (attachBarcode && !byBarcode.has(attachBarcode)) {
+    await db.barcode.create({ data: { code: attachBarcode, itemId } });
   }
 
   const now = new Date();
@@ -145,13 +186,39 @@ export async function deletePurchase(id: string): Promise<{ ok: true }> {
   const remaining = await db.purchase.count({
     where: { itemId: existing.itemId },
   });
-  if (remaining === 0) {
+  // Keep an item that still owns barcodes — deleting a mis-entered purchase must
+  // never destroy a taught barcode -> item mapping.
+  const barcodeCount = await db.barcode.count({
+    where: { itemId: existing.itemId },
+  });
+  if (shouldDeleteOrphan(remaining, barcodeCount)) {
     await db.item.delete({ where: { id: existing.itemId } });
   }
 
   revalidatePath("/month");
   revalidatePath("/prices");
   return { ok: true };
+}
+
+/**
+ * Create a fresh item from a purchase input, auto-categorising unless the user
+ * picked a category. Shared by the create / confirm-new / no-match paths.
+ */
+async function createItem(input: AddPurchaseInput): Promise<string> {
+  const catName = input.categoryName?.trim() || guessCategory(input.itemName);
+  const cat = await db.category.upsert({
+    where: { name: catName },
+    update: {},
+    create: { name: catName },
+  });
+  const item = await db.item.create({
+    data: {
+      name: input.itemName.trim(),
+      normalized: normalizeName(input.itemName),
+      categoryId: cat.id,
+    },
+  });
+  return item.id;
 }
 
 // (exportData + ExportedData removed — replaced by the validated Backup & Restore in app/actions/backup.ts)
