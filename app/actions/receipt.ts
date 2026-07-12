@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { normalizeName, resolveItem } from "@/lib/items";
+import { normalizeName } from "@/lib/items";
 import { dubaiMonthKey } from "@/lib/dates";
 import { guessCategory } from "@/lib/categories";
-import { parseReceipt, type DraftItem, type ParsedReceipt } from "@/lib/receipt";
+import { parseReceipt, type ParsedReceipt } from "@/lib/receipt";
+import { resolveDraftIdentity } from "@/lib/receipt-match";
 
 // Cap on the uploaded PDF size. Carrefour receipts are a few hundred KB; 10MB
 // is a generous ceiling that still refuses anything that isn't a small receipt.
@@ -60,10 +62,23 @@ export async function parseReceiptUpload(
   return { ok: true, parsed };
 }
 
+/** One reviewed receipt line ready to import. Barcode drives identity. */
+export type ImportDraft = {
+  name: string;
+  quantity: number;
+  unit: "each" | "kg";
+  lineFils: number;
+  barcode: string | null;        // canonical GTIN-14 or null
+  onOffer: boolean;              // per-item toggle
+  linkedItemId?: string;        // owner "same as my [X]"
+  ignoreBarcodeMatch?: boolean; // owner tapped "not this item / detach"
+};
+
 export type ImportReceiptInput = {
-  items: DraftItem[];
+  items: ImportDraft[];
   grandTotalFils: number | null;
-  fingerprint: string;
+  fingerprint: string;        // barcode-based, raw parse
+  legacyFingerprint: string;  // old name-based, raw parse
   /** ISO date string; defaults to now when omitted. */
   purchasedAt?: string;
   /** Skip the duplicate check and import anyway. */
@@ -71,9 +86,27 @@ export type ImportReceiptInput = {
 };
 
 export type ImportReceiptResult =
-  | { ok: true; imported: number }
+  | { ok: true; imported: number; warnings?: string[] }
   | { duplicate: true; when: string }
   | { error: string };
+
+/**
+ * Create the barcode->item mapping if that code isn't already owned (this run or
+ * in the DB). A no-op when the code is already registered, which makes buying
+ * the same barcoded product twice on one receipt safe.
+ */
+async function attachBarcode(
+  tx: Prisma.TransactionClient,
+  code: string,
+  itemId: string,
+  seen: Set<string>,
+  byBarcode: Map<string, string>,
+): Promise<void> {
+  if (seen.has(code) || byBarcode.has(code)) return; // already owned -> no-op
+  await tx.barcode.create({ data: { code, itemId } });
+  seen.add(code);
+  byBarcode.set(code, itemId);
+}
 
 /**
  * Import a whole reviewed Carrefour receipt in one shot.
@@ -107,10 +140,15 @@ export async function importReceipt(
     }
   }
 
-  // --- Dedupe ---
+  // --- Dedupe (dual key) ---
+  // Check BOTH the new barcode-based fingerprint and the pre-v2 name-based one,
+  // so a receipt imported before v2 still de-dupes on re-import.
+  // F7 limitation: a pre-v2 receipt whose rows were RENAMED before saving stored
+  // a hash of the edited names, so its legacy fingerprint won't match a fresh
+  // raw parse — that narrow case may not dedupe. Acceptable, documented here.
   if (!input.force) {
-    const existingImport = await db.receiptImport.findUnique({
-      where: { fingerprint: input.fingerprint },
+    const existingImport = await db.receiptImport.findFirst({
+      where: { fingerprint: { in: [input.fingerprint, input.legacyFingerprint] } },
       select: { importedAt: true },
     });
     if (existingImport) {
@@ -134,52 +172,67 @@ export async function importReceipt(
   const purchasedAt = input.purchasedAt ? new Date(input.purchasedAt) : new Date();
   const monthKey = dubaiMonthKey(purchasedAt);
 
-  // Resolve item + category identities BEFORE opening the transaction. Prisma's
-  // interactive transaction has a short default timeout; doing the reads up front
-  // and only writing inside keeps the transaction fast and atomic.
+  // Resolve identities BEFORE opening the transaction. Prisma's interactive
+  // transaction has a short default timeout; doing the reads up front and only
+  // writing inside keeps the transaction fast and atomic.
+  //   byName    normalized name -> itemId (exact-name reuse)
+  //   byBarcode canonical code  -> itemId (barcode is authoritative identity)
   const existingItems = await db.item.findMany({ select: { id: true, name: true } });
-  const itemIndex = new Map(existingItems.map((e) => [e.id, e] as const));
+  const byName = new Map(existingItems.map((e) => [normalizeName(e.name), e.id] as const));
+  const existingBarcodes = await db.barcode.findMany({ select: { code: true, itemId: true } });
+  const byBarcode = new Map(existingBarcodes.map((b) => [b.code, b.itemId] as const));
+
+  const warnings: string[] = [];
 
   await db.$transaction(async (tx) => {
     const receiptImport = await tx.receiptImport.create({
       data: { fingerprint, store: "Carrefour", totalFils },
     });
 
-    // Cache created items/categories within this run so repeated names on one
-    // receipt don't create duplicate rows or hit the unique constraint twice.
+    // Cache created categories within this run so repeated categories don't hit
+    // the unique constraint twice. `byName`/`byBarcode` double as per-run caches.
     const categoryCache = new Map<string, string>();
-    const nameToItemId = new Map<string, string>();
+    const seenBarcodes = new Set<string>();
 
     for (const draft of items) {
-      const norm = normalizeName(draft.name);
+      const resolved = resolveDraftIdentity(draft, { byBarcode, byName });
 
-      let itemId = nameToItemId.get(norm);
-      if (!itemId) {
-        const res = resolveItem(draft.name, [...itemIndex.values()]);
-        if (res.kind === "exact") {
-          itemId = res.item.id;
-        } else {
-          // No exact match → this receipt line is its own item.
-          const catName = guessCategory(draft.name);
-          let categoryId = categoryCache.get(catName);
-          if (!categoryId) {
-            const cat = await tx.category.upsert({
-              where: { name: catName },
-              update: {},
-              create: { name: catName },
-            });
-            categoryId = cat.id;
-            categoryCache.set(catName, categoryId);
-          }
-          const created = await tx.item.create({
-            data: { name: draft.name.trim(), normalized: norm, categoryId },
-            select: { id: true, name: true },
-          });
-          itemId = created.id;
-          // Make the freshly-created item visible to later rows in this receipt.
-          itemIndex.set(created.id, created);
+      let itemId: string;
+      if (resolved.action === "reuse") {
+        itemId = resolved.itemId;
+        if (resolved.attachBarcode) {
+          await attachBarcode(tx, resolved.attachBarcode, itemId, seenBarcodes, byBarcode);
         }
-        nameToItemId.set(norm, itemId);
+      } else if (resolved.action === "conflict") {
+        // The barcode is already owned by a DIFFERENT item than the one the user
+        // linked. Barcode is authoritative: import under the existing owner and
+        // tell the user, rather than crashing or silently ignoring their choice.
+        itemId = resolved.ownedByItemId;
+        warnings.push(
+          `"${draft.name}" was filed under the item that already owns barcode ${resolved.attachBarcode}, not the one you picked.`,
+        );
+      } else {
+        // create: new item (+ category), register it so later rows can reuse it.
+        const catName = guessCategory(draft.name);
+        let categoryId = categoryCache.get(catName);
+        if (!categoryId) {
+          const cat = await tx.category.upsert({
+            where: { name: catName },
+            update: {},
+            create: { name: catName },
+          });
+          categoryId = cat.id;
+          categoryCache.set(catName, categoryId);
+        }
+        const created = await tx.item.create({
+          data: { name: draft.name.trim(), normalized: normalizeName(draft.name), categoryId },
+          select: { id: true },
+        });
+        itemId = created.id;
+        byName.set(normalizeName(draft.name), itemId);
+        if (resolved.attachBarcode) {
+          await attachBarcode(tx, resolved.attachBarcode, itemId, seenBarcodes, byBarcode);
+        }
       }
 
       await tx.purchase.create({
@@ -189,7 +242,7 @@ export async function importReceipt(
           quantity: draft.quantity,
           unit: draft.unit,
           store: "Carrefour",
-          onOffer: false,
+          onOffer: draft.onOffer,
           purchasedAt,
           monthKey,
           importId: receiptImport.id,
@@ -201,5 +254,7 @@ export async function importReceipt(
   revalidatePath("/month");
   revalidatePath("/prices");
   revalidatePath("/log");
-  return { ok: true, imported: items.length };
+  return warnings.length > 0
+    ? { ok: true, imported: items.length, warnings }
+    : { ok: true, imported: items.length };
 }

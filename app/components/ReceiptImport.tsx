@@ -8,12 +8,12 @@ import {
   type ChangeEvent,
 } from "react";
 import { useRouter } from "next/navigation";
+import { type ParsedReceipt } from "@/lib/receipt";
 import {
-  computeFingerprint,
-  type DraftItem,
-  type ParsedReceipt,
-} from "@/lib/receipt";
-import { importReceipt, parseReceiptUpload } from "@/app/actions/receipt";
+  importReceipt,
+  parseReceiptUpload,
+  type ImportDraft,
+} from "@/app/actions/receipt";
 import { parsePriceFils, aedFromFils, formatAed } from "@/lib/money";
 import { guessCategory, PRESET_CATEGORIES } from "@/lib/categories";
 
@@ -43,6 +43,7 @@ type Row = {
   unit: "each" | "kg";
   priceAed: string; // line total in AED, editable
   category: string;
+  barcode: string | null; // canonical GTIN-14 from the parse, carried unedited
 };
 
 // Inline styles mirror PurchaseForm / docs/mockup.html, all driven by the
@@ -93,7 +94,10 @@ const s = {
   },
 } satisfies Record<string, CSSProperties>;
 
-function diFromRow(row: Row): DraftItem | null {
+// Build the import payload for one reviewed row. Returns null when the price is
+// invalid. Per-item on-offer / detach / same-as controls arrive in a later task,
+// so onOffer defaults false and linkedItemId/ignoreBarcodeMatch are omitted.
+function draftFromRow(row: Row): ImportDraft | null {
   const lineFils = parsePriceFils(row.priceAed);
   if (lineFils === null) return null;
   const quantity =
@@ -102,9 +106,9 @@ function diFromRow(row: Row): DraftItem | null {
     name: row.name.trim(),
     quantity,
     unit: row.unit,
-    // unit price incl VAT, derived from the (possibly edited) line total.
-    unitPriceFils: Math.round(lineFils / quantity),
     lineFils,
+    barcode: row.barcode ?? null,
+    onOffer: false,
   };
 }
 
@@ -186,6 +190,7 @@ export default function ReceiptImport() {
           unit: it.unit,
           priceAed: aedFromFils(it.lineFils).toFixed(2),
           category: guessCategory(it.name),
+          barcode: it.barcode ?? null,
         })),
       );
       setRowErrors(new Set());
@@ -232,9 +237,9 @@ export default function ReceiptImport() {
 
     // Validate every price → fils; collect offending rows.
     const bad = new Set<number>();
-    const items: DraftItem[] = [];
+    const items: ImportDraft[] = [];
     rows.forEach((r, i) => {
-      const draft = diFromRow(r);
+      const draft = draftFromRow(r);
       if (!draft || !r.name.trim()) bad.add(i);
       else items.push(draft);
     });
@@ -248,8 +253,13 @@ export default function ReceiptImport() {
       return;
     }
 
-    const grandTotalFils = parsed?.grandTotalFils ?? null;
-    const fingerprint = computeFingerprint(items, grandTotalFils);
+    // Fingerprints come from the RAW parse held in state — never recomputed from
+    // edited rows, so renaming a line on review can't change the dedupe key.
+    if (!parsed) {
+      setSaveError("Couldn't save — please try again.");
+      return;
+    }
+    const grandTotalFils = parsed.grandTotalFils;
 
     setPhase("saving");
     startTransition(async () => {
@@ -257,11 +267,16 @@ export default function ReceiptImport() {
         const res = await importReceipt({
           items,
           grandTotalFils,
-          fingerprint,
+          fingerprint: parsed.fingerprint,
+          legacyFingerprint: parsed.legacyFingerprint,
           force,
         });
         if ("ok" in res) {
-          flash(`Imported ${res.imported} items ✓`);
+          const note =
+            res.warnings && res.warnings.length > 0
+              ? ` (${res.warnings.length} note${res.warnings.length === 1 ? "" : "s"})`
+              : "";
+          flash(`Imported ${res.imported} items ✓${note}`);
           reset();
           router.refresh();
           return;
