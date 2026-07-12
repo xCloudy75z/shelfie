@@ -62,7 +62,13 @@ export default async function MonthPage({
   ]);
   const lastBackupAt = settings?.lastBackupAt?.toISOString() ?? null;
 
-  const spentFils = purchases.reduce((s, p) => s + p.totalFils, 0);
+  const shelfSpentFils = purchases.reduce((s, p) => s + p.totalFils, 0);
+  const importIds = [...new Set(purchases.map((p) => p.importId).filter((x): x is string => !!x))];
+  const discountImports = importIds.length
+    ? await db.receiptImport.findMany({ where: { id: { in: importIds } }, select: { discountFils: true } })
+    : [];
+  const discountsFils = discountImports.reduce((s, i) => s + i.discountFils, 0);
+  const spentFils = Math.max(0, shelfSpentFils - discountsFils); // what was PAID; used everywhere below
 
   // If this month has no budget, fall back to displaying last month's amount as
   // a guide — but never auto-create a row for it.
@@ -75,7 +81,7 @@ export default async function MonthPage({
   // Category breakdown: Purchase → Item → Category (null category → "Other").
   const byCat = new Map<string, number>();
   for (const p of purchases) {
-    const name = p.item.category?.name ?? "Other";
+    const name = p.item.category?.name ?? "Uncategorized";
     byCat.set(name, (byCat.get(name) ?? 0) + p.totalFils);
   }
   const catData = [...byCat].map(([name, fils]) => ({ name, fils }));
@@ -256,6 +262,13 @@ export default async function MonthPage({
             </span>
           )}
         </div>
+
+        {discountsFils > 0 && (
+          <p style={{ fontSize: 12, color: "var(--ink-faint)", margin: "6px 0 0" }}>
+            Items total {formatAed(shelfSpentFils)} at shelf price · you paid{" "}
+            {formatAed(spentFils)} after {formatAed(discountsFils)} in receipt discounts.
+          </p>
+        )}
 
         {targetFils != null ? (
           <div
