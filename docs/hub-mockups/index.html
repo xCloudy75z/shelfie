@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shelfie — Hub redesign · pick a look</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('shelfie-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<link rel="stylesheet" href="../shelfie.css" />
+<style>
+  .wrap{max-width:760px;margin:0 auto;padding:52px 20px 90px}
+  .nav{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+  .nav a{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;text-decoration:none;color:var(--green-strong);font-weight:700;font-size:14px}
+  h1{font-size:clamp(30px,6vw,44px);margin:6px 0 6px}
+  .sub{color:var(--ink-soft);font-size:16px;margin:0 0 8px;max-width:60ch}
+  .pick{background:var(--green-soft);border:1px solid color-mix(in srgb,var(--green) 30%,var(--line));border-radius:14px;padding:14px 16px;color:var(--green-strong);font-weight:600;font-size:14.5px;margin:18px 0 26px}
+  .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  @media(max-width:620px){.opts{grid-template-columns:1fr}}
+  .opt{display:flex;flex-direction:column;text-decoration:none;color:inherit;background:var(--card);
+    border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm);
+    transition:transform .2s,box-shadow .2s,border-color .2s}
+  .opt:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--green) 40%,var(--line))}
+  .opt .k{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--green-strong);letter-spacing:.04em}
+  .opt h2{font-size:20px;margin:6px 0 0}
+  .opt p{color:var(--ink-soft);font-size:14px;margin:8px 0 0}
+  .opt .go{margin-top:14px;font-weight:700;font-size:14px;color:var(--green-strong)}
+  .foot{margin-top:36px;color:var(--ink-faint);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+  <button class="theme-toggle" aria-label="Toggle light/dark"><span class="moon">🌙</span><span class="sun">☀️</span></button>
+  <div class="wrap rise">
+    <div class="nav"><a href="../index.html">← Hub</a><a href="../progress.html">📊 Progress</a></div>
+    <h1>Hub redesign — pick a look</h1>
+    <p class="sub">Six full mockups of the new hub. Every one has the same three sections — <b>① Live App</b>, <b>② Documentation</b> (a brief per plan/phase), <b>③ Reference &amp; tools</b> — they just look different. Open each, toggle 🌙/☀️, and see which you like.</p>
+    <div class="pick">👉 Tell me a number (1–6). Mixing is fine too — e.g. “5, but with the timeline from 4”.</div>
+
+    <div class="opts">
+      <a class="opt" href="option-1.html"><span class="k">OPTION 1</span><h2>Refined section cards</h2><p>The familiar Shelfie card look, now cleanly split into three headed sections. Safe, tidy, no surprises.</p><span class="go">View →</span></a>
+      <a class="opt" href="option-2.html"><span class="k">OPTION 2</span><h2>Fresh-market receipt</h2><p>The whole hub as a printed till-receipt — perforated dividers, monospace line-items. Most on-brand.</p><span class="go">View →</span></a>
+      <a class="opt" href="option-3.html"><span class="k">OPTION 3</span><h2>App sidebar</h2><p>A dashboard feel: sticky left nav for the three sections, content on the right. Collapses on mobile.</p><span class="go">View →</span></a>
+      <a class="opt" href="option-4.html"><span class="k">OPTION 4</span><h2>Build timeline</h2><p>Live App banner up top, then the plans as a vertical timeline — done, active and next at a glance.</p><span class="go">View →</span></a>
+      <a class="opt" href="option-5.html"><span class="k">OPTION 5</span><h2>Editorial magazine</h2><p>Big Fraunces hero, a numbered article-style index of the docs. Typographic and premium.</p><span class="go">View →</span></a>
+      <a class="opt" href="option-6.html"><span class="k">OPTION 6</span><h2>Big CTA + accordion</h2><p>A giant “Open Shelfie” button, docs as tap-to-expand rows. Compact — great on a phone.</p><span class="go">View →</span></a>
+    </div>
+
+    <p class="foot">Mockups only — nothing wired to real data. Pick one and I'll build the real hub from it (spec → break-it → ship).</p>
+  </div>
+<script src="../theme.js"></script>
+</body>
+</html>

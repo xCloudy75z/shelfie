@@ -1,0 +1,224 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shelfie Hub — Option 4 · Build timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('shelfie-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<link rel="stylesheet" href="../shelfie.css" /><style>
+/* page styles — tokens only */
+.wrap{max-width:860px;margin:0 auto;padding:26px 20px 60px}
+
+/* top nav line */
+.topnav{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  flex-wrap:wrap;margin-bottom:22px;font-size:14px}
+.topnav a{text-decoration:none;font-weight:600}
+.topnav a:hover{text-decoration:underline}
+.topnav .lbl{color:var(--ink-faint);font-family:var(--font-mono);font-size:12.5px;
+  letter-spacing:.02em}
+
+.wordmark{font-family:var(--font-display);font-weight:600;font-size:15px;letter-spacing:-.01em}
+
+/* section headings */
+.sec-h{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--ink-faint);font-family:var(--font-body);margin:0 0 14px}
+section{margin-bottom:38px}
+
+/* ---- SECTION 1 · Live App banner ---- */
+.banner{position:relative;overflow:hidden;border-radius:var(--radius);
+  border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);
+  padding:30px 30px;display:flex;align-items:center;justify-content:space-between;
+  gap:26px;flex-wrap:wrap}
+.banner::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(680px 300px at 12% -30%, color-mix(in srgb,var(--green) 26%, transparent), transparent 70%);
+  opacity:.9}
+.banner-l{position:relative;z-index:1;flex:1 1 320px;min-width:0}
+.banner-title{font-family:var(--font-display);font-weight:600;font-size:30px;
+  letter-spacing:-.02em;margin:0 0 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.live-badge{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-body);
+  font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+  color:#fff;background:var(--green);padding:5px 12px;border-radius:999px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#fff;
+  box-shadow:0 0 0 0 rgba(255,255,255,.7);animation:livepulse 2.2s ease-out infinite}
+@keyframes livepulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}
+  70%{box-shadow:0 0 0 9px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+.banner-sub{color:var(--ink-soft);font-size:15px;margin:0;max-width:44ch}
+.cta{position:relative;z-index:1;display:inline-flex;align-items:center;gap:9px;
+  text-decoration:none;font-weight:800;font-size:16px;color:#fff;background:var(--green);
+  padding:15px 26px;border-radius:14px;box-shadow:var(--shadow-sm);white-space:nowrap;
+  transition:transform .15s,filter .15s}
+.cta:hover{transform:translateY(-2px);filter:brightness(1.05)}
+.cta .arw{font-size:18px}
+
+/* ---- SECTION 2 · Timeline ---- */
+.timeline{position:relative;margin:0;padding:2px 0 2px}
+.timeline::before{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:2px;
+  background:var(--line);border-radius:2px}
+.node{position:relative;padding:0 0 26px 40px}
+.node:last-child{padding-bottom:0}
+.dot{position:absolute;left:2px;top:3px;width:18px;height:18px;border-radius:50%;
+  background:var(--card);border:2px solid var(--line);z-index:1}
+.node.done .dot{background:var(--green);border-color:var(--green)}
+.node.done .dot::after{content:"";position:absolute;left:4px;top:4px;width:6px;height:6px;
+  border-radius:50%;background:var(--card)}
+.node.active .dot{background:var(--amber);border-color:var(--amber);
+  animation:dotpulse 1.8s ease-in-out infinite}
+@keyframes dotpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--amber) 60%,transparent)}
+  50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--amber) 0%,transparent)}}
+.node.queued .dot{background:transparent;border-color:var(--ink-faint);border-style:dashed}
+@media (prefers-reduced-motion:reduce){.node.active .dot{animation:none}}
+.node-card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:14px 16px;box-shadow:var(--shadow-sm)}
+.node.active .node-card{border-color:color-mix(in srgb,var(--amber) 45%,var(--line))}
+.node-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:5px}
+.node-title{font-family:var(--font-display);font-weight:600;font-size:17px;
+  letter-spacing:-.01em;margin:0}
+.node-brief{color:var(--ink-soft);font-size:14px;margin:0}
+
+/* ---- SECTION 3 · Reference chips ---- */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+  font-weight:600;font-size:14px;color:var(--ink);background:var(--card);
+  border:1px solid var(--line);border-radius:12px;padding:10px 15px;
+  box-shadow:var(--shadow-sm);transition:transform .15s,border-color .15s}
+.chip:hover{transform:translateY(-2px);border-color:var(--green)}
+.chip .ic{font-size:15px}
+
+/* ---- footer ---- */
+.foot{margin-top:44px;padding-top:22px;border-top:2px dashed var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  font-size:13px;color:var(--ink-soft)}
+.foot a{font-weight:600;text-decoration:none}
+.foot a:hover{text-decoration:underline}
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);
+  font-size:12px;font-weight:600;color:var(--ink-soft);background:var(--card-2);
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+
+@media (max-width:560px){
+  .banner{padding:24px 20px}
+  .banner-title{font-size:25px}
+  .cta{width:100%;justify-content:center}
+}
+</style>
+</head><body>
+<button class="theme-toggle" aria-label="Toggle light/dark"><span class="moon">🌙</span><span class="sun">☀️</span></button>
+
+<div class="wrap">
+  <div class="topnav">
+    <a href="index.html">← All mockups</a>
+    <span class="lbl">Option 4 · Build timeline</span>
+  </div>
+
+  <!-- SECTION 1 -->
+  <section class="rise" aria-labelledby="s1">
+    <h2 id="s1" class="sec-h">The Live App</h2>
+    <div class="banner">
+      <div class="banner-l">
+        <h1 class="banner-title">
+          <span class="wordmark" style="font-size:inherit">Shelfie</span>
+          <span class="live-badge"><span class="live-dot"></span>Live</span>
+        </h1>
+        <p class="banner-sub">Shelfie is live on Vercel — set your 4-digit PIN and it's yours.</p>
+      </div>
+      <a class="cta" href="https://shelfie-gamma-seven.vercel.app" target="_blank" rel="noopener">
+        Open Shelfie <span class="arw">↗</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- SECTION 2 -->
+  <section class="rise" aria-labelledby="s2">
+    <h2 id="s2" class="sec-h">Documentation</h2>
+    <div class="timeline">
+
+      <div class="node done">
+        <span class="dot"></span>
+        <div class="node-card">
+          <div class="node-top">
+            <h3 class="node-title">Plan 1 · Core app</h3>
+            <span class="badge badge-ready"><span class="badge-dot"></span>Shipped</span>
+          </div>
+          <p class="node-brief">The 3-tab core: PIN lock, Log, Prices, Month budget, Backup &amp; Restore, installable PWA.</p>
+        </div>
+      </div>
+
+      <div class="node done">
+        <span class="dot"></span>
+        <div class="node-card">
+          <div class="node-top">
+            <h3 class="node-title">Plan 2 · Receipt import</h3>
+            <span class="badge badge-ready"><span class="badge-dot"></span>Shipped</span>
+          </div>
+          <p class="node-brief">Upload the emailed Carrefour PDF → the whole trip is read, reviewed and logged.</p>
+        </div>
+      </div>
+
+      <div class="node done">
+        <span class="dot"></span>
+        <div class="node-card">
+          <div class="node-top">
+            <h3 class="node-title">Receipt Import v2</h3>
+            <span class="badge badge-ready"><span class="badge-dot"></span>Shipped</span>
+          </div>
+          <p class="node-brief">Barcodes as a product's true identity, per-item offers, auto trip date, multi-buy, dedupe, Start-fresh reset.</p>
+        </div>
+      </div>
+
+      <div class="node active">
+        <span class="dot"></span>
+        <div class="node-card">
+          <div class="node-top">
+            <h3 class="node-title">Phase A · Show the barcode</h3>
+            <span class="badge badge-final"><span class="badge-dot"></span>In progress</span>
+          </div>
+          <p class="node-brief">See each item's stored barcode (clear chip); no-barcode rows flag red on import.</p>
+        </div>
+      </div>
+
+      <div class="node queued">
+        <span class="dot"></span>
+        <div class="node-card">
+          <div class="node-top">
+            <h3 class="node-title">Phase B · Merge tool</h3>
+            <span class="badge badge-coming"><span class="badge-dot"></span>Queued</span>
+          </div>
+          <p class="node-brief">Fold accidental duplicate items into one, with confirm + undo.</p>
+        </div>
+      </div>
+
+      <div class="node queued">
+        <span class="dot"></span>
+        <div class="node-card">
+          <div class="node-top">
+            <h3 class="node-title">Phase C &amp; D · Scanning</h3>
+            <span class="badge badge-coming"><span class="badge-dot"></span>Queued</span>
+          </div>
+          <p class="node-brief">Scan a barcode with the phone camera → identify it or open its price story (feasibility-gated).</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SECTION 3 -->
+  <section class="rise" aria-labelledby="s3">
+    <h2 id="s3" class="sec-h">Reference &amp; tools</h2>
+    <div class="chips">
+      <a class="chip" href="../progress.html"><span class="ic">📊</span> Build Progress</a>
+      <a class="chip" href="../masterdoc.html"><span class="ic">📚</span> Master Documentation</a>
+      <a class="chip" href="../spec.html"><span class="ic">📐</span> Design Spec</a>
+      <a class="chip" href="../review.html"><span class="ic">🛡️</span> Adversarial Review</a>
+      <a class="chip" href="../mockup.html"><span class="ic">🎨</span> Interactive Mockup</a>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>🔒 Only code &amp; mockups here — never real receipts or spending.</span>
+    <span style="display:inline-flex;align-items:center;gap:12px">
+      <a href="https://github.com/xCloudy75z/shelfie" target="_blank" rel="noopener">GitHub repo ↗</a>
+      <span class="pill">⚡ All Opus</span>
+    </span>
+  </div>
+</div>
+
+<script src="../theme.js"></script></body></html>

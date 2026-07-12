@@ -1,0 +1,210 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shelfie Hub — Option 2 · Fresh-market receipt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('shelfie-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<link rel="stylesheet" href="../shelfie.css" /><style>
+/* ---- page: single narrow receipt column ---- */
+.wrap{max-width:640px;margin:0 auto;padding:26px 18px 60px}
+.topnav{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-family:var(--font-mono);font-size:12.5px;margin-bottom:22px;flex-wrap:wrap}
+.topnav a{text-decoration:none;font-weight:600}
+.topnav a:hover{text-decoration:underline}
+.topnav .lbl{color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em}
+
+.receipt{
+  max-width:470px;margin:0 auto;background:var(--card);
+  border:1px solid var(--line);border-radius:6px;
+  box-shadow:var(--shadow);padding:26px 26px 30px;position:relative}
+
+/* receipt masthead */
+.rhead{text-align:center}
+.wordmark{font-family:var(--font-display);font-weight:700;letter-spacing:-.02em;
+  font-size:42px;line-height:1;margin:2px 0 8px}
+.subtitle{font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ink-faint)}
+.rmeta{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);
+  letter-spacing:.05em;margin-top:9px;display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+
+/* category / section header */
+.cat{font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;
+  display:flex;align-items:center;gap:8px}
+.cat::after{content:"";flex:1;height:0;border-top:1px solid var(--line)}
+
+/* Section 1 — Live App headline CTA */
+.cta{display:block;text-decoration:none;color:inherit;text-align:center;
+  border:1.5px solid var(--green);border-radius:8px;padding:20px 18px;
+  background:var(--green-soft);transition:transform .16s,box-shadow .16s}
+.cta:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.cta .live{display:inline-flex;align-items:center;gap:6px;background:var(--green);
+  color:#fff;font-family:var(--font-body);font-weight:800;font-size:11px;
+  letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:999px}
+:root[data-theme="dark"] .cta .live{color:#0d120e}
+.cta .live .dot{width:7px;height:7px;border-radius:50%;background:currentColor;
+  animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.cta .live .dot{animation:none}}
+.cta .open{font-family:var(--font-display);font-weight:700;font-size:26px;
+  margin:12px 0 6px;color:var(--green-strong)}
+.cta .arrow{font-size:19px}
+.cta .note{font-size:13.5px;color:var(--ink-soft);max-width:34ch;margin:0 auto;line-height:1.5}
+
+/* Section 2 — receipt line items */
+.item{padding:12px 0;border-bottom:1px dotted var(--line)}
+.item:last-child{border-bottom:0}
+.item .row{display:flex;align-items:baseline;gap:6px;font-family:var(--font-mono)}
+.item .name{font-size:13px;font-weight:600;letter-spacing:.03em;
+  text-transform:uppercase;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .leader{flex:1;border-bottom:1px dotted var(--ink-faint);
+  transform:translateY(-3px);min-width:14px;opacity:.55}
+.item .st{flex-shrink:0}
+.item .brief{margin:6px 0 0 2px;font-size:13px;color:var(--ink-soft);
+  line-height:1.5;padding-left:14px;border-left:2px solid var(--line-soft)}
+
+/* Section 3 — footer tools block */
+.tools{display:grid;gap:2px}
+.tools a{display:flex;align-items:center;justify-content:space-between;
+  text-decoration:none;font-family:var(--font-mono);font-size:12.5px;
+  padding:9px 2px;border-bottom:1px dotted var(--line);color:var(--ink)}
+.tools a:last-child{border-bottom:0}
+.tools a:hover .tname{text-decoration:underline}
+.tools .tname{font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.tools .tgo{color:var(--green-strong);font-weight:600}
+
+/* footer / thank-you */
+.thanks{text-align:center;font-family:var(--font-mono);font-size:11.5px;
+  color:var(--ink-faint);line-height:1.8;letter-spacing:.04em}
+.thanks .privacy{color:var(--ink-soft)}
+.thanks a{color:var(--green-strong);text-decoration:none;font-weight:600}
+.thanks a:hover{text-decoration:underline}
+.pill{display:inline-flex;align-items:center;gap:5px;margin-top:12px;
+  font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.06em;
+  padding:4px 12px;border-radius:999px;background:var(--paper-2);
+  color:var(--ink-soft);border:1px solid var(--line)}
+.barcode{height:34px;margin:16px auto 4px;max-width:220px;
+  background:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 4px,
+    var(--ink) 4px 7px,transparent 7px 9px,var(--ink) 9px 10px,transparent 10px 14px);
+  opacity:.85}
+
+@media (max-width:520px){
+  .wrap{padding:20px 12px 48px}
+  .receipt{padding:22px 18px 26px}
+  .wordmark{font-size:36px}
+  .cta .open{font-size:23px}
+}
+</style>
+</head><body>
+<button class="theme-toggle" aria-label="Toggle light/dark"><span class="moon">🌙</span><span class="sun">☀️</span></button>
+
+<div class="wrap">
+  <nav class="topnav">
+    <a href="index.html">← All mockups</a>
+    <span class="lbl">Option 2 · Fresh-market receipt</span>
+  </nav>
+
+  <div class="receipt rise">
+    <!-- Masthead -->
+    <div class="rhead">
+      <div class="wordmark">Shelfie</div>
+      <div class="subtitle">· Carrefour-style receipts ·</div>
+      <div class="rmeta">
+        <span>PROJECT HUB</span><span>NO.&nbsp;002</span><span>ALL&nbsp;OPUS</span>
+      </div>
+    </div>
+
+    <hr class="perf" />
+
+    <!-- SECTION 1 · THE LIVE APP -->
+    <h2 class="cat">The Live App</h2>
+    <a class="cta" href="https://shelfie-gamma-seven.vercel.app" target="_blank" rel="noopener">
+      <span class="live"><span class="dot"></span>Live</span>
+      <div class="open">Open Shelfie <span class="arrow">↗</span></div>
+      <p class="note">Shelfie is live on Vercel — set your 4-digit PIN and it's yours.</p>
+    </a>
+
+    <hr class="perf" />
+
+    <!-- SECTION 2 · DOCUMENTATION -->
+    <h2 class="cat">Documentation</h2>
+
+    <div class="item">
+      <div class="row">
+        <span class="name">Plan 1 · Core app</span>
+        <span class="leader"></span>
+        <span class="st"><span class="badge badge-ready"><span class="badge-dot"></span>Shipped</span></span>
+      </div>
+      <p class="brief">The 3-tab core: PIN lock, Log, Prices, Month budget, Backup &amp; Restore, installable PWA.</p>
+    </div>
+
+    <div class="item">
+      <div class="row">
+        <span class="name">Plan 2 · Receipt import</span>
+        <span class="leader"></span>
+        <span class="st"><span class="badge badge-ready"><span class="badge-dot"></span>Shipped</span></span>
+      </div>
+      <p class="brief">Upload the emailed Carrefour PDF → the whole trip is read, reviewed and logged.</p>
+    </div>
+
+    <div class="item">
+      <div class="row">
+        <span class="name">Receipt Import v2</span>
+        <span class="leader"></span>
+        <span class="st"><span class="badge badge-ready"><span class="badge-dot"></span>Shipped</span></span>
+      </div>
+      <p class="brief">Barcodes as a product's true identity, per-item offers, auto trip date, multi-buy, dedupe, Start-fresh reset.</p>
+    </div>
+
+    <div class="item">
+      <div class="row">
+        <span class="name">Phase A · Show the barcode</span>
+        <span class="leader"></span>
+        <span class="st"><span class="badge badge-final"><span class="badge-dot"></span>In progress</span></span>
+      </div>
+      <p class="brief">See each item's stored barcode (clear chip); no-barcode rows flag red on import.</p>
+    </div>
+
+    <div class="item">
+      <div class="row">
+        <span class="name">Phase B · Merge tool</span>
+        <span class="leader"></span>
+        <span class="st"><span class="badge badge-coming"><span class="badge-dot"></span>Queued</span></span>
+      </div>
+      <p class="brief">Fold accidental duplicate items into one, with confirm + undo.</p>
+    </div>
+
+    <div class="item">
+      <div class="row">
+        <span class="name">Phase C &amp; D · Scanning</span>
+        <span class="leader"></span>
+        <span class="st"><span class="badge badge-coming"><span class="badge-dot"></span>Queued</span></span>
+      </div>
+      <p class="brief">Scan a barcode with the phone camera → identify it or open its price story (feasibility-gated).</p>
+    </div>
+
+    <hr class="perf" />
+
+    <!-- SECTION 3 · REFERENCE & TOOLS -->
+    <h2 class="cat">Reference &amp; Tools</h2>
+    <nav class="tools">
+      <a href="../progress.html"><span class="tname">Build Progress</span><span class="tgo">→</span></a>
+      <a href="../masterdoc.html"><span class="tname">Master Documentation</span><span class="tgo">→</span></a>
+      <a href="../spec.html"><span class="tname">Design Spec</span><span class="tgo">→</span></a>
+      <a href="../review.html"><span class="tname">Adversarial Review</span><span class="tgo">→</span></a>
+      <a href="../mockup.html"><span class="tname">Interactive Mockup</span><span class="tgo">→</span></a>
+    </nav>
+
+    <hr class="perf" />
+
+    <!-- Footer / thank-you -->
+    <div class="thanks">
+      <div class="privacy">🔒 Only code &amp; mockups here — never real receipts or spending.</div>
+      <div class="barcode" aria-hidden="true"></div>
+      <div><a href="https://github.com/xCloudy75z/shelfie" target="_blank" rel="noopener">GitHub repo ↗</a></div>
+      <div><span class="pill">⚡ All Opus</span></div>
+    </div>
+  </div>
+</div>
+
+<script src="../theme.js"></script></body></html>
