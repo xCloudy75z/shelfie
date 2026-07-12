@@ -153,9 +153,16 @@ export default async function PricesPage({
                 >
                   {p.unit === "kg" ? `${p.quantity} kg` : `×${p.quantity}`}
                 </span>
-                <span className="mono" style={{ fontWeight: 700, minWidth: 88, textAlign: "right" }}>
-                  {formatAed(p.totalFils)}
-                </span>
+                <div style={{ minWidth: 92, textAlign: "right" }}>
+                  <span className="mono" style={{ fontWeight: 700 }}>
+                    {formatAed(p.totalFils)}
+                  </span>
+                  {p.quantity !== 1 && (
+                    <div className="mono" style={{ fontSize: 11, color: "var(--ink-faint)" }}>
+                      {formatAed(Math.round(p.totalFils / (p.quantity || 1)))}/{p.unit === "kg" ? "kg" : "ea"}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
