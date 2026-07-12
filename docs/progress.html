@@ -47,9 +47,9 @@
   <div class="wrap">
     <div class="nav"><a href="index.html">← Hub</a><a href="spec.html">Spec</a><a href="review.html">🛡️ Review</a><a href="mockup.html">📱 Mockup</a></div>
     <h1>Build Progress</h1>
-    <p class="sub">Receipt import — now working end-to-end on the live app. <span class="live"><i></i>live · auto-refreshes every 60s</span></p>
+    <p class="sub">Receipt Import v2 shipped — barcode identity, offers, multi-buy &amp; dedupe all live. <span class="live"><i></i>live · auto-refreshes every 60s</span></p>
 
-    <div class="done-banner">✅ Plan 1 (Core · 16 tasks) &amp; Plan 2 (Carrefour receipt import) — both shipped &amp; live at <a href="https://shelfie-gamma-seven.vercel.app" target="_blank">shelfie-gamma-seven.vercel.app</a></div>
+    <div class="done-banner">✅ Plan 1 (Core) · Plan 2 (Receipt import) · Receipt Import v2 (barcode identity + offers) — all shipped &amp; live at <a href="https://shelfie-gamma-seven.vercel.app" target="_blank">shelfie-gamma-seven.vercel.app</a></div>
 
     <div class="barwrap">
       <div class="top"><span style="font-weight:700">Receipt import (Plan 2)</span><span class="pct" id="pct">0%</span></div>
@@ -59,8 +59,8 @@
 
     <div id="list"></div>
 
-    <h2 style="font-size:20px;margin:26px 0 4px">Next — Receipt Import v2</h2>
-    <p class="sub" style="margin-bottom:10px">Barcode identity, per-item offers &amp; an accuracy self-check. <b>Designed — <a href="receipt-v2-spec.html" style="color:var(--green-strong);font-weight:800">read the plan</a> — awaiting your approval.</b></p>
+    <h2 style="font-size:20px;margin:26px 0 4px">Receipt Import v2 — shipped ✓</h2>
+    <p class="sub" style="margin-bottom:10px">Barcode identity (two-way), per-item offers &amp; an accuracy self-check — <b>built, tested (89 tests) &amp; verified live</b>. <a href="receipt-v2-spec.html" style="color:var(--green-strong);font-weight:800">the design</a>. Roadmap &amp; ideas:</p>
     <div id="nextlist"></div>
 
     <p class="foot">Upload the emailed Carrefour PDF → read on the server (reliable) → review → save the whole trip.<br>Built test-first by fresh Opus agents; verified on the real Vercel app with a real receipt.</p>
@@ -79,12 +79,11 @@ const TASKS=[
  {id:9, n:"Live end-to-end proof", d:"real receipt on the phone → 'Total matches ✓'", s:"done"}
 ];
 const NEXT=[
- {n:"Barcode capture", d:"store each product's barcode as its true identity"},
- {n:"Two-way matching", d:"receipt + optional manual barcode auto-link the same product"},
- {n:"Per-item ‘on offer’", d:"promo lines excluded from your best-price benchmark"},
- {n:"Accuracy self-check", d:"flag any row with no barcode before it saves"},
- {n:"Merge tool (later)", d:"fold together duplicates you've already built up"},
- {n:"Camera scanning (last)", d:"scan a barcode instead of typing — after an on-device test"}
+ {n:"Check barcode capture", d:"confirm Carrefour receipt barcodes pass validation & actually store, so auto-linking works (from live test feedback)", tag:"looking"},
+ {n:"Show the barcode", d:"surface each item's barcode on Prices/review so manual linking is usable & verifiable", tag:"queued"},
+ {n:"Merge tool", d:"fold already-split duplicate items together (e.g. popcorn ↔ A.G PCORN)", tag:"queued"},
+ {n:"Camera scanning", d:"scan instead of type — needs an on-device iOS test first", tag:"last"},
+ {n:"Idea · scan → price story", d:"in-store: scan a barcode → app opens that item's Prices/price history instantly", tag:"idea"}
 ];
 const done=TASKS.filter(t=>t.s==="done").length, pct=Math.round(done/TASKS.length*100);
 document.getElementById("pct").textContent=pct+"%";
@@ -98,9 +97,9 @@ document.getElementById("list").innerHTML=TASKS.map(t=>`
   </div>`).join("");
 document.getElementById("nextlist").innerHTML=NEXT.map(t=>`
   <div class="task todo">
-    <div class="ic">◦</div>
+    <div class="ic">${t.tag==="idea"?"💡":t.tag==="looking"?"◐":"◦"}</div>
     <div class="n">${t.n}<small>${t.d}</small></div>
-    <div class="st">Queued</div>
+    <div class="st">${t.tag}</div>
   </div>`).join("");
 </script>
 <script src="theme.js"></script>
