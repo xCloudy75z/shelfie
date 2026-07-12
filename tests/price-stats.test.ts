@@ -52,6 +52,16 @@ describe("computeStats", () => {
     expect(shelfVerdict(560, s!).level).toBe("unknown");
   });
 
+  it("on-offer purchases are excluded and can push an item below the judge gate", () => {
+    const now = new Date("2026-07-12T00:00:00Z");
+    const purchases = [
+      { totalFils: 500, quantity: 1, unit: "each", onOffer: true,  purchasedAt: new Date("2026-07-01") },
+      { totalFils: 900, quantity: 1, unit: "each", onOffer: false, purchasedAt: new Date("2026-06-01") },
+    ] as any;
+    const stats = computeStats(purchases, "each", now);
+    expect(stats!.enoughToJudge).toBe(false); // only 1 non-offer sample
+  });
+
   // Regression (review I-2): no silent fallback to stale data when nothing recent is non-offer.
   it("stays 'unknown' when only stale non-offer history and a recent offer exist", () => {
     const s = computeStats([
