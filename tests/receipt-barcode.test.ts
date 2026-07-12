@@ -31,10 +31,18 @@ describe("parseReceipt barcode pairing", () => {
     expect(r.items[0].barcode).toBeNull();
   });
 
-  it("ignores an invalid barcode (bad check digit) -> null", () => {
+  it("captures a Carrefour code even if it fails the GTIN check digit", () => {
+    const r = parseReceipt([
+      item("A.G PCORN EBTR273G", "1", "5.50", "5.50"),
+      "Barcode: 071727355039",
+    ]);
+    expect(r.items[0].barcode).toBe("00071727355039");
+  });
+
+  it("ignores a too-short barcode line -> null", () => {
     const r = parseReceipt([
       item("BREAD BROWN", "1", "3.25", "3.25"),
-      "Barcode: 5000159407237",
+      "Barcode: 12",
     ]);
     expect(r.items[0].barcode).toBeNull();
   });

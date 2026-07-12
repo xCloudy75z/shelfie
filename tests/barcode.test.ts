@@ -16,8 +16,11 @@ describe("canonicalizeBarcode", () => {
     expect(canonicalizeBarcode("  5000159407236 ")).toBe("05000159407236");
     expect(canonicalizeBarcode("Barcode: 5000159407236")).toBe("05000159407236");
   });
-  it("rejects a wrong check digit", () => {
-    expect(canonicalizeBarcode("5000159407237")).toBeNull(); // last digit wrong
+  it("accepts a code even if it fails the GTIN check digit (Carrefour codes often do)", () => {
+    // 071727355039 is a real Carrefour receipt barcode whose check digit is not
+    // GTIN-valid; we still accept it so it can be stored and matched.
+    expect(canonicalizeBarcode("071727355039")).toBe("00071727355039");
+    expect(canonicalizeBarcode("5000159407237")).toBe("05000159407237");
   });
   it("rejects too-short / too-long / empty", () => {
     expect(canonicalizeBarcode("1234567")).toBeNull();       // 7 digits

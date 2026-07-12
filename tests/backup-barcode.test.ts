@@ -16,8 +16,8 @@ describe("validateBackup barcodes", () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.data.barcodes).toEqual([{ code: "05000159407236", itemName: "Milk" }]); // canonicalised
   });
-  it("drops an invalid barcode (bad check digit)", () => {
-    const r = validateBackup(base({ barcodes: [{ code: "5000159407237", itemName: "Milk" }] }));
+  it("drops an invalid barcode (too short)", () => {
+    const r = validateBackup(base({ barcodes: [{ code: "12", itemName: "Milk" }] }));
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.data.barcodes).toEqual([]);
   });
