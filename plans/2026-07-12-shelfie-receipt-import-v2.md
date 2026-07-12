@@ -258,7 +258,7 @@ Expected: FAIL — `barcode` is undefined on `DraftItem` / property missing.
 - [ ] **Step 3: Implement** — edit `lib/receipt.ts`:
 
 1. Add the import at the top: `import { canonicalizeBarcode } from "./barcode";`
-2. Add to the `DraftItem` type: `barcode: string | null;`
+2. Add to the `DraftItem` type: `barcode?: string | null;` — **OPTIONAL on purpose**, so existing `DraftItem` literals (the fixtures in `tests/receipt.test.ts` and the `diFromRow` construction in `ReceiptImport.tsx`) still compile until the client is wired up in Task 6. The parser still sets `barcode: null` explicitly on every draft it creates.
 3. Rewrite the loop body of `parseReceipt` to track `current` and reset it. Replace the existing `for (const raw of lines) { ... }` block with:
 
 ```ts
@@ -303,7 +303,7 @@ Expected: FAIL — `barcode` is undefined on `DraftItem` / property missing.
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cmd /c "npx vitest run tests/receipt-barcode.test.ts && npx vitest run tests/receipt.test.ts"`
-Expected: PASS. The existing `tests/receipt.test.ts` must still pass — if it constructs `DraftItem`s inline, add `barcode: null` to those fixtures.
+Expected: PASS. The existing `tests/receipt.test.ts` must still pass unchanged — because `barcode` is optional, its inline `DraftItem` fixtures compile without edits.
 
 - [ ] **Step 5: Commit**
 
@@ -453,8 +453,15 @@ git commit -m "feat: parseReceipt returns barcode + legacy fingerprints for dedu
 ## Task 6: `importReceipt` — barcode-first precedence, caches, offers, dual-dedupe
 
 **Files:**
-- Modify: `app/actions/receipt.ts`
+- Create: `lib/receipt-match.ts` (pure resolver)
+- Modify: `app/actions/receipt.ts`, `app/components/ReceiptImport.tsx` (client wiring — required here so typecheck passes)
 - Test: `tests/import-matching.test.ts`
+
+**Amendments from the break-the-plan review — apply all of these:**
+- **Conflict result (F6, spec §11.9):** add to `ResolveResult` the variant `| { action: "conflict"; ownedByItemId: string; itemId: string; attachBarcode: string }`. In `resolveDraftIdentity`, BEFORE branch 2 (explicit link), if `d.linkedItemId` is set AND `d.barcode` is owned by a DIFFERENT item (`ctx.byBarcode.get(d.barcode)` exists and ≠ `d.linkedItemId`), return `{ action: "conflict", ownedByItemId: <owner>, itemId: d.linkedItemId, attachBarcode: d.barcode }`. Add a test: `linkedItemId: "item-milk"` while `barcode: "05000159407236"` is owned by `item-pop` → expect `action: "conflict"`. In the action, a conflict still imports the row under the barcode's EXISTING owner (barcode is authoritative) and pushes a human message into a returned `warnings: string[]`; it never crashes.
+- **tx type (F10):** type the transaction client as `Prisma.TransactionClient` (`import { Prisma } from "@prisma/client";`), not `any`.
+- **Client wiring (F2/F4) — REQUIRED in this task:** update `app/components/ReceiptImport.tsx` `save()` to (1) build `ImportDraft[]` — each row → `{ name, quantity, unit, lineFils, barcode: row.barcode ?? null, onOffer: false }` (per-row on-offer / detach / same-as controls arrive in Task 9; default `onOffer: false` and omit `linkedItemId`/`ignoreBarcodeMatch` for now), and (2) send `fingerprint: parsed.fingerprint` and `legacyFingerprint: parsed.legacyFingerprint` taken from the RAW parse result held in state — do NOT recompute the fingerprint from edited rows. Read `ReceiptImport.tsx` first to match its state/save shape; keep the raw `parsed` object in state.
+- **Dedupe note (F7):** the dual legacy+new check fully protects prior imports that were not renamed at import time; a pre-v2 receipt whose rows were renamed before saving stored a hash of the edited names and may not dedupe — acceptable, document only (a comment in `importReceipt`).
 
 Update `ImportReceiptInput` and `DraftItem` payloads. Extend `ImportReceiptInput`:
 
