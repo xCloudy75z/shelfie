@@ -1,4 +1,5 @@
 import { canonicalizeBarcode } from "./barcode";
+import { normalizeName } from "./items";
 
 export type DraftItem = {
   name: string;
@@ -70,22 +71,25 @@ export function parseReceipt(lines: string[]): ParsedReceipt {
   return { items, grandTotalFils, paidFils, sumFils, matchesTotal, warnings };
 }
 
-/**
- * A stable, deterministic fingerprint for a parsed receipt, used to detect
- * re-imports of the same emailed PDF. Built from the item count + grand total +
- * the SORTED list of `name|lineFils` pairs, so the physical row order never
- * changes the result — the same trip always hashes the same. A one-cent price
- * change or a different item count produces a different fingerprint.
- *
- * Uses a 32-bit FNV-1a rolling hash (no crypto import needed) rendered in base36.
- */
-export function computeFingerprint(items: DraftItem[], grandTotalFils: number | null): string {
-  const pairs = items.map((i) => `${i.name}|${i.lineFils}`).sort();
-  const payload = `${items.length}#${grandTotalFils ?? ""}#${pairs.join(";")}`;
-  let h = 0x811c9dc5; // FNV-1a offset basis
+function fnv1a(payload: string): string {
+  let h = 0x811c9dc5;
   for (let i = 0; i < payload.length; i++) {
     h ^= payload.charCodeAt(i);
-    h = Math.imul(h, 0x01000193); // FNV prime
+    h = Math.imul(h, 0x01000193);
   }
   return (h >>> 0).toString(36);
+}
+
+/** Stable dedupe key. Barcode drives identity when present, so renames on the
+ *  review screen never change it; falls back to the normalized parsed name. */
+export function computeFingerprint(items: DraftItem[], grandTotalFils: number | null): string {
+  const pairs = items.map((i) => `${i.barcode ?? normalizeName(i.name)}|${i.lineFils}`).sort();
+  return fnv1a(`${items.length}#${grandTotalFils ?? ""}#${pairs.join(";")}`);
+}
+
+/** The pre-v2 hash (name|lineFils). Used only to detect receipts imported
+ *  before the fingerprint basis changed, so they aren't re-imported twice. */
+export function computeLegacyFingerprint(items: DraftItem[], grandTotalFils: number | null): string {
+  const pairs = items.map((i) => `${i.name}|${i.lineFils}`).sort();
+  return fnv1a(`${items.length}#${grandTotalFils ?? ""}#${pairs.join(";")}`);
 }
