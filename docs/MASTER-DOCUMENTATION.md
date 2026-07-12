@@ -6,7 +6,7 @@
 - **Project hub (design/review/progress):** https://xcloudy75z.github.io/shelfie/
 - **GitHub repo (public):** https://github.com/xCloudy75z/shelfie
 - **Local path:** `C:\Users\games\Documents\xCloudy\IDEAS\Shelfie`
-- **Owner:** Abdulla (UAE). Non-technical founder; provides direction, AI implements.
+- **Owner:** A (UAE). Non-technical founder; provides direction, AI implements.
 - **Status at time of writing:** Core app (Plan 1) fully shipped & live. **Receipt import (Plan 2) now works end-to-end on Vercel** (server-side PDF read fixed 2026-07-12 — see §15.5). **Receipt Import v2** (barcode identity, per-item offers, auto-detected trip date, per-unit prices, multi-buy, dedupe, "Start fresh" reset) is **shipped & verified live (2026-07-12)** — see `docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`.
 
 ---

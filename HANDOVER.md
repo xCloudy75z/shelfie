@@ -18,7 +18,7 @@
 - **ALL OPUS, NO SONNET.** Every step and every spawned subagent/workflow runs on Opus. Pass the Opus model explicitly when dispatching subagents.
 
 ### 1.2 The owner is remote — he can only see live web pages
-- The owner ("Abdulla", UAE, non-technical founder) is on a **remote session**; he **cannot see local files, the preview pane, or MCP widgets — only real web pages.**
+- The owner ("A", UAE, non-technical founder) is on a **remote session**; he **cannot see local files, the preview pane, or MCP widgets — only real web pages.**
 - **Nothing is "approved" until he has seen it in a browser with his own eyes.** He loves HTML pages with clickable buttons.
 - So: **publish anything for him to review as HTML on GitHub Pages** (the `/docs` folder → the hub) and give him the URL. Never rely on local files / preview / pasted specs.
 - **In-chat multiple-choice questions DO work for him** — use them for decisions.
