@@ -18,7 +18,69 @@ export type ParsedReceipt = {
   warnings: string[];
   fingerprint: string;           // new (barcode-based, raw parse)
   legacyFingerprint: string;     // old name-based, raw parse
+  purchaseDateISO: string | null; // trip date as yyyy-mm-dd, or null if none found
 };
+
+const MONTHS: Record<string, number> = {
+  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+  jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+};
+
+// Numeric date: D[sep]M[sep]YY(YY), separators / . -. Fields anchored on word
+// boundaries so a price like 5.50 (only 2 fields, no year) can't match.
+const NUMERIC_DATE = /\b(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2}|\d{4})\b/;
+// "26 Jun 2026" style.
+const TEXT_DATE = /\b(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})\b/;
+
+function toISO(day: number, month: number, year: number): string | null {
+  if (month < 1 || month > 12) return null;
+  if (day < 1 || day > 31) return null;
+  const maxDay = [31, isLeap(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+  if (day > maxDay) return null;
+  const mm = String(month).padStart(2, "0");
+  const dd = String(day).padStart(2, "0");
+  return `${year}-${mm}-${dd}`;
+}
+
+function isLeap(y: number): boolean {
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+
+/** Extract the trip date from any line of the receipt (headers/footers included).
+ *  UAE convention is day-first. Returns the first line that yields a valid
+ *  calendar date as `yyyy-mm-dd`, or null. Dependency-free. */
+export function extractReceiptDate(lines: string[]): string | null {
+  for (const raw of lines) {
+    const line = raw.replace(/\s+/g, " ").trim();
+    if (!line) continue;
+
+    const t = TEXT_DATE.exec(line);
+    if (t) {
+      const month = MONTHS[t[2].slice(0, 3).toLowerCase()];
+      if (month) {
+        const iso = toISO(parseInt(t[1], 10), month, parseInt(t[3], 10));
+        if (iso) return iso;
+      }
+    }
+
+    const n = NUMERIC_DATE.exec(line);
+    if (n) {
+      const f1 = parseInt(n[1], 10);
+      const f2 = parseInt(n[2], 10);
+      let year = parseInt(n[3], 10);
+      if (n[3].length === 2) year += 2000;
+
+      // Day-first (UAE): field1 is DAY unless it can't be (>12) while field2 can.
+      let day: number, month: number;
+      if (f1 > 12 && f2 <= 12) { day = f1; month = f2; }        // DD/MM
+      else if (f2 > 12 && f1 <= 12) { day = f2; month = f1; }   // MM/DD
+      else { day = f1; month = f2; }                            // ambiguous -> day-first
+      const iso = toISO(day, month, year);
+      if (iso) return iso;
+    }
+  }
+  return null;
+}
 
 // name + qty + 6 two-decimal numbers (unitIncl, unitExcl, totalExcl, vatRate, vatAmount, totIncl)
 const ITEM = /^(.+?)\s+(\d+(?:\.\d+)?)\s+(\d+\.\d{2})\s+\d+\.\d{2}\s+\d+\.\d{2}\s+\d+\.\d{2}\s+\d+\.\d{2}\s+(\d+\.\d{2})\s*$/;
@@ -72,7 +134,8 @@ export function parseReceipt(lines: string[]): ParsedReceipt {
   if (items.length === 0) warnings.push("No items were recognised in this file.");
   const fingerprint = computeFingerprint(items, grandTotalFils);
   const legacyFingerprint = computeLegacyFingerprint(items, grandTotalFils);
-  return { items, grandTotalFils, paidFils, sumFils, matchesTotal, warnings, fingerprint, legacyFingerprint };
+  const purchaseDateISO = extractReceiptDate(lines);
+  return { items, grandTotalFils, paidFils, sumFils, matchesTotal, warnings, fingerprint, legacyFingerprint, purchaseDateISO };
 }
 
 function fnv1a(payload: string): string {
