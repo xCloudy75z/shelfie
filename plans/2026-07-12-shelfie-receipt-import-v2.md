@@ -620,6 +620,7 @@ const ctx = () => ({
   byBarcode: new Map<string, string>([["05000159407236", "item-pop"]]),
   // resolveItem-style existing items:
   existing: [{ id: "item-milk", name: "Milk" }],
+  itemsOwningBarcode: new Set<string>(), // item-milk owns no barcode in the base ctx
 });
 
 describe("resolveManualIdentity", () => {
@@ -634,6 +635,11 @@ describe("resolveManualIdentity", () => {
   it("new barcode + fuzzy name -> confirm prompt, carry barcode", () => {
     const r = resolveManualIdentity({ name: "Milk 2L", barcode: "07350053850019" }, ctx());
     expect(r).toEqual({ action: "confirm", suggestItemId: "item-milk", attachBarcode: "07350053850019" });
+  });
+  it("new barcode + exact name whose item ALREADY owns a barcode -> create new (§11.3)", () => {
+    const c = { ...ctx(), itemsOwningBarcode: new Set<string>(["item-milk"]) };
+    const r = resolveManualIdentity({ name: "Milk", barcode: "07350053850019" }, c);
+    expect(r).toEqual({ action: "create", attachBarcode: "07350053850019" });
   });
   it("new barcode + no name match -> create a new item carrying the barcode", () => {
     const r = resolveManualIdentity({ name: "Pistachios", barcode: "07350053850019" }, ctx());
@@ -657,7 +663,7 @@ Expected: FAIL — `resolveManualIdentity` not exported.
 // lib/purchase-match.ts
 import { resolveItem, normalizeName, type ItemRef } from "@/lib/items";
 
-export type ManualCtx = { byBarcode: Map<string, string>; existing: ItemRef[] };
+export type ManualCtx = { byBarcode: Map<string, string>; existing: ItemRef[]; itemsOwningBarcode: Set<string> };
 export type ManualResult =
   | { action: "reuse"; itemId: string; matchedByBarcode?: true; attachBarcode?: string }
   | { action: "confirm"; suggestItemId: string; attachBarcode: string }
@@ -672,7 +678,12 @@ export function resolveManualIdentity(
     const hit = ctx.byBarcode.get(input.barcode);
     if (hit) return { action: "reuse", itemId: hit, matchedByBarcode: true };
     const res = resolveItem(input.name, ctx.existing);
-    if (res.kind === "exact") return { action: "reuse", itemId: res.item.id, attachBarcode: input.barcode };
+    if (res.kind === "exact") {
+      // §11.3: an exact-name match whose item ALREADY owns a (different) barcode is
+      // a different product (e.g. Milk 1L vs Milk 2L) — make a new item, don't merge.
+      if (ctx.itemsOwningBarcode.has(res.item.id)) return { action: "create", attachBarcode: input.barcode };
+      return { action: "reuse", itemId: res.item.id, attachBarcode: input.barcode };
+    }
     if (res.kind === "suggest") return { action: "confirm", suggestItemId: res.item.id, attachBarcode: input.barcode };
     return { action: "create", attachBarcode: input.barcode };
   }
@@ -762,7 +773,7 @@ git commit -m "fix: never auto-delete an item that still owns barcodes"
 Read the current `ReceiptImport.tsx` first and extend its draft-row rendering. Per row add:
 1. **Editable name** input (already may exist) bound to draft state.
 2. **On offer** checkbox → sets `draft.onOffer`.
-3. **No-barcode flag:** compute `flagged = !draft.barcode && !nameMatchesExisting(draft.name)` (pass the existing item names to the client, or compute "matches an existing item" via a small server call already available; simplest: the parse result marks rows the server couldn't barcode — show a "check this" chip when `draft.barcode` is null). Show a subtle amber "check this" chip; do not block save.
+3. **No-barcode flag (M13):** a row is flagged ONLY when `!draft.barcode && !nameMatchesExisting(draft.name)` — no barcode AND not already a known item by name, so recurring weighed produce / carrier bags you already track are NOT re-flagged every import. Have `parseReceiptUpload` annotate each returned draft with `knownItemName: string | null` (barcode lookup) and a `nameKnown: boolean` (normalized-name match against existing items); the client shows a subtle amber "check this" chip on flagged rows only. Do not block save.
 4. **Recognised hint:** if `draft.barcode` is present and known (server can annotate each parsed draft with `knownItemName` by looking up `byBarcode` during `parseReceiptUpload`), show "→ files as **{knownItemName}**" and a **"not this item"** button that sets `draft.ignoreBarcodeMatch = true` (detach — C2).
 5. **Same as my [X]:** when a row is new/renamed and fuzzy-matches an existing item, show "same as my {X}?"; accepting sets `draft.linkedItemId`.
 
@@ -807,29 +818,33 @@ const base = (over: any = {}) => ({
   items: [{ name: "Milk", category: "Dairy" }], purchases: [], budgets: [], barcodes: [], ...over,
 });
 
+// NOTE: match the ACTUAL ValidateResult shape in lib/backup.ts. Per the existing
+// tests/backup.test.ts the success payload is `r.data` and access must be guarded
+// by `if (r.ok)` (discriminated union) — NOT `r.value`.
 describe("validateBackup barcodes", () => {
   it("keeps a valid barcode row", () => {
     const r = validateBackup(base({ barcodes: [{ code: "5000159407236", itemName: "Milk" }] }));
     expect(r.ok).toBe(true);
-    expect(r.value.barcodes).toEqual([{ code: "05000159407236", itemName: "Milk" }]); // canonicalised
+    if (r.ok) expect(r.data.barcodes).toEqual([{ code: "05000159407236", itemName: "Milk" }]); // canonicalised
   });
   it("drops an invalid barcode (bad check digit)", () => {
     const r = validateBackup(base({ barcodes: [{ code: "5000159407237", itemName: "Milk" }] }));
     expect(r.ok).toBe(true);
-    expect(r.value.barcodes).toEqual([]);
+    if (r.ok) expect(r.data.barcodes).toEqual([]);
   });
   it("drops duplicate codes within the file (keeps first)", () => {
     const r = validateBackup(base({ barcodes: [
       { code: "5000159407236", itemName: "Milk" },
       { code: "05000159407236", itemName: "Other" },
     ] }));
-    expect(r.value.barcodes).toHaveLength(1);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.barcodes).toHaveLength(1);
   });
   it("tolerates a missing barcodes array (old backup)", () => {
     const b = base(); delete (b as any).barcodes;
     const r = validateBackup(b);
     expect(r.ok).toBe(true);
-    expect(r.value.barcodes).toEqual([]);
+    if (r.ok) expect(r.data.barcodes).toEqual([]);
   });
 });
 ```
