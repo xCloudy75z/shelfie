@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { normalizeName } from "@/lib/items";
+import { normalizeName, resolveItem } from "@/lib/items";
 import { dubaiMonthKey } from "@/lib/dates";
 import { guessCategory } from "@/lib/categories";
 import { parseReceipt, type ParsedReceipt } from "@/lib/receipt";
@@ -13,8 +13,23 @@ import { resolveDraftIdentity } from "@/lib/receipt-match";
 // is a generous ceiling that still refuses anything that isn't a small receipt.
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Per-row recognition hints the review screen uses to flag / recognise / suggest.
+ * Index-aligned to `parsed.items`. Types are erased at build, so exporting this
+ * from a `"use server"` module is fine (only functions must be async).
+ */
+export type Hint = {
+  /** Name of the item that already owns this row's barcode, else null. */
+  knownItemName: string | null;
+  /** True when this row's name normalizes to an item we already track. */
+  nameKnown: boolean;
+  /** A fuzzy "same as my X?" candidate — only when there's no barcode/name match. */
+  suggestItemId: string | null;
+  suggestName: string | null;
+};
+
 export type ParseReceiptUploadResult =
-  | { ok: true; parsed: ParsedReceipt }
+  | { ok: true; parsed: ParsedReceipt; hints: Hint[] }
   | { error: string };
 
 /**
@@ -59,7 +74,35 @@ export async function parseReceiptUpload(
   }
 
   const parsed = parseReceipt(lines);
-  return { ok: true, parsed };
+
+  // Build recognition hints so the review screen can recognise / flag / suggest
+  // each row. Read-only lookups against existing items + taught barcodes.
+  const existing = await db.item.findMany({ select: { id: true, name: true } });
+  const nameById = new Map(existing.map((e) => [e.id, e.name] as const));
+  const byNormName = new Set(existing.map((e) => normalizeName(e.name)));
+  const barcodes = await db.barcode.findMany({ select: { code: true, itemId: true } });
+  const byBarcode = new Map(barcodes.map((b) => [b.code, b.itemId] as const));
+
+  const hints: Hint[] = parsed.items.map((it) => {
+    const ownerId = it.barcode ? byBarcode.get(it.barcode) ?? null : null;
+    const knownItemName = ownerId ? nameById.get(ownerId) ?? null : null;
+    const nameKnown = byNormName.has(normalizeName(it.name));
+
+    // Only offer a "same as my X?" link when neither the barcode nor an exact
+    // name already resolves this row — otherwise it's already handled.
+    let suggestItemId: string | null = null;
+    let suggestName: string | null = null;
+    if (!ownerId && !nameKnown) {
+      const res = resolveItem(it.name, existing);
+      if (res.kind === "suggest") {
+        suggestItemId = res.item.id;
+        suggestName = res.item.name;
+      }
+    }
+    return { knownItemName, nameKnown, suggestItemId, suggestName };
+  });
+
+  return { ok: true, parsed, hints };
 }
 
 /** One reviewed receipt line ready to import. Barcode drives identity. */

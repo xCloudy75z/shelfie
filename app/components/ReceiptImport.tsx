@@ -13,6 +13,7 @@ import {
   importReceipt,
   parseReceiptUpload,
   type ImportDraft,
+  type Hint,
 } from "@/app/actions/receipt";
 import { parsePriceFils, aedFromFils, formatAed } from "@/lib/money";
 import { guessCategory, PRESET_CATEGORIES } from "@/lib/categories";
@@ -44,6 +45,15 @@ type Row = {
   priceAed: string; // line total in AED, editable
   category: string;
   barcode: string | null; // canonical GTIN-14 from the parse, carried unedited
+  onOffer: boolean; // per-item "on offer" toggle (excluded from best-price benchmark)
+  linkedItemId?: string; // "same as my X?" accepted → reuse that item + remember barcode
+  ignoreBarcodeMatch?: boolean; // "not this item" → detach a recognised barcode
+  // Server recognition hints, carried ON the row (not a parallel array) so that
+  // removing a row never mis-aligns a hint with the wrong item.
+  knownItemName: string | null; // this row's barcode already files as this item
+  nameKnown: boolean; // name already matches a tracked item
+  suggestItemId: string | null; // fuzzy "same as my X?" candidate id
+  suggestName: string | null; // …and its friendly name
 };
 
 // Inline styles mirror PurchaseForm / docs/mockup.html, all driven by the
@@ -92,11 +102,22 @@ const s = {
     color: "var(--ink-faint)",
     margin: "0 2px 4px",
   },
+  // Small pill-shaped text button for the recognise / detach / link affordances.
+  linkBtn: {
+    border: "1px solid var(--line)",
+    background: "var(--card)",
+    color: "var(--ink-soft)",
+    borderRadius: 8,
+    padding: "3px 9px",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
 } satisfies Record<string, CSSProperties>;
 
 // Build the import payload for one reviewed row. Returns null when the price is
-// invalid. Per-item on-offer / detach / same-as controls arrive in a later task,
-// so onOffer defaults false and linkedItemId/ignoreBarcodeMatch are omitted.
+// invalid. Carries the per-item on-offer / detach / same-as choices through to
+// the server so identity + offer handling honour what the owner reviewed.
 function draftFromRow(row: Row): ImportDraft | null {
   const lineFils = parsePriceFils(row.priceAed);
   if (lineFils === null) return null;
@@ -108,7 +129,9 @@ function draftFromRow(row: Row): ImportDraft | null {
     unit: row.unit,
     lineFils,
     barcode: row.barcode ?? null,
-    onOffer: false,
+    onOffer: row.onOffer,
+    ...(row.linkedItemId ? { linkedItemId: row.linkedItemId } : {}),
+    ...(row.ignoreBarcodeMatch ? { ignoreBarcodeMatch: true } : {}),
   };
 }
 
@@ -182,16 +205,32 @@ export default function ReceiptImport() {
         return;
       }
 
+      const hints = res.hints;
+      const blankHint: Hint = {
+        knownItemName: null,
+        nameKnown: false,
+        suggestItemId: null,
+        suggestName: null,
+      };
+
       setParsed(p);
       setRows(
-        p.items.map((it) => ({
-          name: it.name,
-          quantity: it.quantity,
-          unit: it.unit,
-          priceAed: aedFromFils(it.lineFils).toFixed(2),
-          category: guessCategory(it.name),
-          barcode: it.barcode ?? null,
-        })),
+        p.items.map((it, idx) => {
+          const h = hints[idx] ?? blankHint;
+          return {
+            name: it.name,
+            quantity: it.quantity,
+            unit: it.unit,
+            priceAed: aedFromFils(it.lineFils).toFixed(2),
+            category: guessCategory(it.name),
+            barcode: it.barcode ?? null,
+            onOffer: false,
+            knownItemName: h.knownItemName,
+            nameKnown: h.nameKnown,
+            suggestItemId: h.suggestItemId,
+            suggestName: h.suggestName,
+          };
+        }),
       );
       setRowErrors(new Set());
       setSaveError(null);
@@ -517,6 +556,124 @@ export default function ReceiptImport() {
                 Enter a valid name and price above 0.
               </p>
             )}
+
+            {/* Per-item controls: on-offer, recognise/detach, same-as, flag */}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 10,
+              }}
+            >
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 13,
+                  color: "var(--ink-soft)",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={row.onOffer}
+                  onChange={(e) => updateRow(i, { onOffer: e.target.checked })}
+                />
+                On offer
+              </label>
+
+              {/* No-barcode self-check (M13): flag only truly unknown rows —
+                  never re-flag produce/bags we already track by name. */}
+              {!row.barcode && !row.nameKnown && (
+                <span
+                  style={{
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: "var(--amber)",
+                    background: "var(--amber-soft)",
+                    border: "1px solid var(--line)",
+                    borderRadius: 999,
+                    padding: "3px 9px",
+                  }}
+                >
+                  ⚠ check this
+                </span>
+              )}
+
+              {/* Recognised barcode → files automatically; owner can detach (C2). */}
+              {row.knownItemName && !row.ignoreBarcodeMatch && (
+                <>
+                  <span style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
+                    → files as <strong>{row.knownItemName}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => updateRow(i, { ignoreBarcodeMatch: true })}
+                    style={s.linkBtn}
+                  >
+                    not this item
+                  </button>
+                </>
+              )}
+              {row.knownItemName && row.ignoreBarcodeMatch && (
+                <>
+                  <span style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>
+                    barcode detached
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => updateRow(i, { ignoreBarcodeMatch: false })}
+                    style={s.linkBtn}
+                  >
+                    undo
+                  </button>
+                </>
+              )}
+
+              {/* Fuzzy "same as my X?" link for new/renamed rows. */}
+              {row.suggestName && !row.ignoreBarcodeMatch && (
+                row.linkedItemId ? (
+                  <>
+                    <span
+                      style={{
+                        fontSize: 12.5,
+                        color: "var(--green-strong)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      linked to {row.suggestName} ✓
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateRow(i, { linkedItemId: undefined })}
+                      style={s.linkBtn}
+                    >
+                      clear
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
+                      same as my <strong>{row.suggestName}</strong>?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateRow(i, {
+                          linkedItemId: row.suggestItemId ?? undefined,
+                        })
+                      }
+                      style={s.linkBtn}
+                    >
+                      yes, link
+                    </button>
+                  </>
+                )
+              )}
+            </div>
           </div>
         ))}
       </div>
