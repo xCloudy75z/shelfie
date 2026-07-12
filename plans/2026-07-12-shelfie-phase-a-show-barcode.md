@@ -103,14 +103,18 @@ Append to `lib/barcode.ts`:
  */
 export function displayBarcode(canonical: string | null | undefined): string {
   if (!canonical) return "";
-  const significant = String(canonical).replace(/\D/g, "").replace(/^0+/, "");
+  const digits = String(canonical).replace(/\D/g, "");
+  if (digits.length === 0) return ""; // no digits at all → garbage in, show nothing
+  const significant = digits.replace(/^0+/, "");
   const n = significant.length;
-  if (n === 0) return "00000000"; // all-zero degenerate (cannot occur from canonical)
+  if (n === 0) return "00000000"; // has digits but all zero (cannot occur from canonical)
   if (n > 14) return significant; // defensive: never produced by canonicalizeBarcode
   const target = [8, 12, 13, 14].find((len) => len >= n) ?? 14;
   return significant.padStart(target, "0");
 }
 ```
+
+> **break-plan C1 fix:** the no-digits guard (`digits.length === 0 → ""`) MUST come **before** stripping leading zeros. A single `n === 0` guard cannot distinguish `"abc"` (no digits → must be `""`) from `"00000000"` (all-zero → `"00000000"`), and would render a bogus `🏷 00000000` line for any non-digit input.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -169,9 +173,9 @@ export default function BarcodeLine({
         margin: "4px 0 0",
       }}
     >
-      {shown.map((code) => (
+      {shown.map((code, i) => (
         <span
-          key={code}
+          key={`${code}-${i}`}
           className="mono"
           aria-label={`Barcode ${code}`}
           style={{
