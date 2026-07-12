@@ -1,7 +1,7 @@
 # Receipt Import v2 — Barcode Identity, Offers & Accuracy
 
 **Date:** 2026-07-12
-**Status:** Design — awaiting owner approval
+**Status:** Design APPROVED (2026-07-12) — proceeding to the build plan
 **Feature area:** Log tab → receipt import + manual entry; item identity; price stats
 **Depends on:** Receipt import (Plan 2) now working end-to-end on Vercel (server-side pdf.js extraction fixed 2026-07-12).
 
@@ -170,4 +170,4 @@ An Opus skeptical-engineer review attacked this design against the live code. 2 
 - **M14 — Migration.** Ship `2_add_barcode` via `prisma migrate deploy` in `vercel-build` (already the pattern); confirm no live schema drift first.
 - **M15 — Normalized-name collision.** Note that "exact name match" is normalized equality; two distinct unique names can normalise alike (rare, single-user). Attach barcode to the first match; acceptable.
 
-**Owner sign-off needed on:** C2 (add the detach control now), M5 (accept "unknown" verdicts for promo-heavy items), M6 (GTIN-14 canonicalisation — awareness only). Everything else is folded in as a default.
+**Owner sign-off (2026-07-12):** ✅ **C2** — add the "not this item / detach" control now. ✅ **M5** — accept "not enough prices yet" for promo-heavy items. ✅ **M6** — GTIN-14 canonicalisation acknowledged. All 15 findings folded in; **spec APPROVED to proceed to the build plan.**
