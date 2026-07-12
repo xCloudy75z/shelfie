@@ -30,11 +30,16 @@ export default function BarcodeLine({
           className="mono"
           aria-label={`Barcode ${code}`}
           style={{
-            fontSize: 12,
-            color: "var(--ink-faint)",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "var(--ink)",
             display: "inline-flex",
             alignItems: "center",
-            gap: 4,
+            gap: 7,
+            border: "1px solid var(--line)",
+            background: "var(--card)",
+            borderRadius: 999,
+            padding: "6px 13px",
           }}
         >
           <span aria-hidden="true">🏷</span>

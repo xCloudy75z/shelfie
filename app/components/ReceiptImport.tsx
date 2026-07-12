@@ -498,14 +498,35 @@ export default function ReceiptImport() {
             key={i}
             style={{
               padding: 12,
-              border: "1px solid var(--line)",
+              // No captured barcode → flag the whole row red so it's easy to
+              // spot while scanning the list before saving (owner request R1).
+              border: `1px solid ${row.barcode ? "var(--line)" : "var(--red)"}`,
+              borderLeft: `${row.barcode ? "1px" : "4px"} solid ${row.barcode ? "var(--line)" : "var(--red)"}`,
               borderRadius: 12,
-              background: "var(--card-2)",
+              background: row.barcode ? "var(--card-2)" : "var(--red-soft)",
             }}
           >
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <label style={s.miniLabel}>Item</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <label style={s.miniLabel}>Item</label>
+                  {!row.barcode && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        letterSpacing: "0.04em",
+                        color: "#fff",
+                        background: "var(--red)",
+                        borderRadius: 999,
+                        padding: "3px 9px",
+                        marginBottom: 4,
+                      }}
+                    >
+                      NO BARCODE
+                    </span>
+                  )}
+                </div>
                 <input
                   value={row.name}
                   onChange={(e) => updateRow(i, { name: e.target.value })}
@@ -628,23 +649,9 @@ export default function ReceiptImport() {
                 On offer
               </label>
 
-              {/* No-barcode self-check (M13): flag only truly unknown rows —
-                  never re-flag produce/bags we already track by name. */}
-              {!row.barcode && !row.nameKnown && (
-                <span
-                  style={{
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    color: "var(--amber)",
-                    background: "var(--amber-soft)",
-                    border: "1px solid var(--line)",
-                    borderRadius: 999,
-                    padding: "3px 9px",
-                  }}
-                >
-                  ⚠ check this
-                </span>
-              )}
+              {/* No-barcode rows are now flagged red at the row level (the
+                  "NO BARCODE" badge by the item name — owner request R1), which
+                  supersedes the older amber "check this" pill. */}
 
               {/* Recognised barcode → files automatically; owner can detach (C2). */}
               {row.knownItemName && !row.ignoreBarcodeMatch && (

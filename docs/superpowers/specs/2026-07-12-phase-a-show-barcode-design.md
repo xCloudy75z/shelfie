@@ -109,6 +109,13 @@ No writes. No new state. No action changes.
 - The only logic (`displayBarcode`) is isolated, total, and unit-tested against the exact real-world case that previously bit us (the padded Carrefour code).
 - Fully reversible: removing the display changes nothing about stored data.
 
+## 7a. Post-live refinement (owner picks, 2026-07-12)
+
+After the first ship, the owner reviewed live and asked for clearer styling, choosing from a hub mockup (`docs/phase-a-mockup.html`):
+- **Barcode style = Option B (bordered chip).** `BarcodeLine` renders each code as an outlined pill (🏷 + `mono` number, `var(--ink)` weight 600, `1px var(--line)` border, `var(--card)` bg, pill radius) instead of faint grey text. Stacked when multiple. Same on Prices + receipt review.
+- **No-barcode rows flagged RED on the receipt-review screen = Option R1.** When a review row has `!row.barcode`, the whole row gets a red border, a 4px red left edge, a `var(--red-soft)` background, and a solid **"NO BARCODE"** badge next to the item name — so the owner can spot un-barcoded lines while scanning before saving.
+- **This deliberately overrides the earlier M13 rule** ("only flag truly-unknown no-barcode rows, never re-flag produce/bags known by name"). The owner wants *every* no-barcode row visible, so the old amber "⚠ check this" pill is removed and ALL `!row.barcode` rows go red — including produce/bags that legitimately never carry a barcode. Accepted tradeoff per explicit owner request; can be dialed back to R2 (quiet red text) or re-scoped to unknown-only if it proves noisy.
+
 ## 8a. Privacy confirmation (break-spec F6)
 
 The only value surfaced is a product barcode (GTIN), which is explicitly **not** personal data (handover §1.3). The receipt parser attaches a `Barcode:` line to the item row it sits under, and Carrefour item barcodes are product GTINs — a footer loyalty/customer barcode does not sit under an item row, so it is not surfaced here. No name, card, phone, ID, or any personal token is read or displayed. Nothing personal leaks through this feature.
