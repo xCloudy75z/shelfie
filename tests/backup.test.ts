@@ -28,6 +28,7 @@ function validRaw(): BackupData {
       },
     ],
     budgets: [{ monthKey: "2026-07", amountFils: 150000 }],
+    barcodes: [],
   };
 }
 

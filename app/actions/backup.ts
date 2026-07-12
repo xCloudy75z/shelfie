@@ -15,13 +15,14 @@ import {
  * Carries NO database ids — restore always mints fresh ones.
  */
 export async function buildBackup(): Promise<BackupData> {
-  const [items, purchases, budgets] = await Promise.all([
+  const [items, purchases, budgets, barcodes] = await Promise.all([
     db.item.findMany({ include: { category: true }, orderBy: { name: "asc" } }),
     db.purchase.findMany({
       include: { item: true },
       orderBy: { purchasedAt: "desc" },
     }),
     db.budget.findMany({ orderBy: { monthKey: "asc" } }),
+    db.barcode.findMany({ include: { item: true }, orderBy: { code: "asc" } }),
   ]);
 
   return {
@@ -45,6 +46,10 @@ export async function buildBackup(): Promise<BackupData> {
     budgets: budgets.map((b) => ({
       monthKey: b.monthKey,
       amountFils: b.amountFils,
+    })),
+    barcodes: barcodes.map((b) => ({
+      code: b.code,
+      itemName: b.item.name,
     })),
   };
 }
@@ -153,6 +158,19 @@ export async function restoreBackup(data: BackupData): Promise<RestoreResult> {
           amountFils: b.amountFils,
         })),
       });
+    }
+
+    // Recreate barcodes AFTER items exist so itemName resolves to a fresh id.
+    // Skip rows whose name doesn't resolve; defensively swallow any duplicate
+    // code write (the file is already deduped, but never trust the input).
+    for (const bc of clean.barcodes) {
+      const itemId = itemIdByName.get(bc.itemName);
+      if (!itemId) continue;
+      try {
+        await tx.barcode.create({ data: { code: bc.code, itemId } });
+      } catch {
+        // Duplicate code (unique PK) — ignore; first write wins.
+      }
     }
   });
 

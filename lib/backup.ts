@@ -11,9 +11,12 @@
  * booby-trapped extras (`__proto__`, injected `id`, script strings) are dropped.
  */
 
+import { canonicalizeBarcode } from "@/lib/barcode";
+
 export const CURRENT_BACKUP_VERSION = 1;
 
 export type BackupItem = { name: string; category: string | null };
+export type BackupBarcode = { code: string; itemName: string };
 export type BackupPurchase = {
   itemName: string;
   totalFils: number;
@@ -33,6 +36,7 @@ export type BackupData = {
   items: BackupItem[];
   purchases: BackupPurchase[];
   budgets: BackupBudget[];
+  barcodes: BackupBarcode[];
 };
 
 export type BackupCounts = { items: number; purchases: number; budgets: number };
@@ -118,6 +122,25 @@ export function validateBackup(raw: unknown): ValidateResult {
     return { ok: false, error: MSG_CORRUPT };
   if (!raw.budgets.every(validBudget)) return { ok: false, error: MSG_CORRUPT };
 
+  // `barcodes` is additive: a pre-v2 backup simply lacks the array. Tolerate a
+  // missing array (default []) and, when present, require it to be an array.
+  if (raw.barcodes !== undefined && !Array.isArray(raw.barcodes))
+    return { ok: false, error: MSG_CORRUPT };
+
+  // Canonicalise each code, DROP invalid codes, and DEDUPE by canonical code
+  // (first wins). Rows carry no DB ids — restore resolves itemName -> new item.
+  const seenCodes = new Set<string>();
+  const barcodes: BackupBarcode[] = [];
+  for (const b of (Array.isArray(raw.barcodes) ? raw.barcodes : [])) {
+    if (!isRecord(b)) continue;
+    if (!isNonEmptyString(b.itemName)) continue;
+    const code = canonicalizeBarcode(typeof b.code === "string" ? b.code : null);
+    if (!code) continue;
+    if (seenCodes.has(code)) continue;
+    seenCodes.add(code);
+    barcodes.push({ code, itemName: String(b.itemName) });
+  }
+
   // Whitelist: rebuild every record from known fields only. We never spread the
   // raw object, so any extra keys (ids, __proto__, injected strings) are dropped.
   const data: BackupData = {
@@ -142,6 +165,7 @@ export function validateBackup(raw: unknown): ValidateResult {
       monthKey: String(b.monthKey),
       amountFils: b.amountFils,
     })),
+    barcodes,
   };
 
   return {
