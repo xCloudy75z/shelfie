@@ -21,3 +21,28 @@ export function canonicalizeBarcode(raw: string | null | undefined): string | nu
   if (digits.length < 8 || digits.length > 14) return null;
   return digits.padStart(14, "0");
 }
+
+/**
+ * Best-effort HUMAN-FACING form of a stored canonical barcode — the inverse of
+ * canonicalizeBarcode's zero-padding, as far as it can be recovered.
+ *
+ * LOSSY BY CONSTRUCTION: canonical storage discards the original printed length,
+ * so this reconstructs it by stripping the padding zeros, then restoring to the
+ * nearest standard GTIN length (8/12/13/14). Correct for everyday codes (EAN-13,
+ * the known 12-digit UPC), but it CANNOT recover codes with many genuine leading
+ * zeros, or non-standard 9/10/11-digit codes — those over-collapse / over-pad.
+ * That is an accepted limitation (see the spec + pinned tests); do not "fix" it
+ * without storing the original length (a schema change, out of Phase A scope).
+ * Never throws. Returns "" for empty/garbage input.
+ */
+export function displayBarcode(canonical: string | null | undefined): string {
+  if (!canonical) return "";
+  const digits = String(canonical).replace(/\D/g, "");
+  if (digits.length === 0) return ""; // no digits at all → garbage in, show nothing
+  const significant = digits.replace(/^0+/, "");
+  const n = significant.length;
+  if (n === 0) return "00000000"; // has digits but all zero (cannot occur from canonical)
+  if (n > 14) return significant; // defensive: never produced by canonicalizeBarcode
+  const target = [8, 12, 13, 14].find((len) => len >= n) ?? 14;
+  return significant.padStart(target, "0");
+}
