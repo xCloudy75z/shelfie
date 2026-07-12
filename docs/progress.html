@@ -97,9 +97,9 @@ const PHASES=[
     "Over-strict GTIN check digit was rejecting real Carrefour barcodes — made lenient (caught on the live phone)",
     "‘use server’ files may only export async functions — pure resolvers moved to lib/*-match.ts"]}]},
 
- {id:"phaseA", title:"Phase A · Show the barcode", status:"active",
+ {id:"phaseA", title:"Phase A · Show the barcode", status:"done",
   desc:"Show each item's stored barcode on the Prices tab and the receipt-review screen, so you can verify the app tracks the right product.",
-  note:"Built &amp; shipped (114 tests) · now refining how it looks + red flag for no-barcode rows.",
+  note:"Shipped &amp; verified on the owner's phone (114 tests). Bordered-chip barcode + red ‘NO BARCODE’ flag on un-barcoded review rows.",
   steps:[
     {n:"Design approved", s:"done"},
     {n:"Spec + published", s:"done"},
@@ -108,7 +108,7 @@ const PHASES=[
     {n:"Break the plan", s:"done"},
     {n:"Build · 114 tests", s:"done"},
     {n:"Break the build", s:"done"},
-    {n:"Live verify + clarity polish", s:"active"}
+    {n:"Live verify (phone) ✓", s:"done"}
   ],
   breaks:[
     {stage:"🛡️ Break the SPEC", verdict:"2 fixed", items:[
