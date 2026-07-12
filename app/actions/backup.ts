@@ -161,16 +161,17 @@ export async function restoreBackup(data: BackupData): Promise<RestoreResult> {
     }
 
     // Recreate barcodes AFTER items exist so itemName resolves to a fresh id.
-    // Skip rows whose name doesn't resolve; defensively swallow any duplicate
-    // code write (the file is already deduped, but never trust the input).
+    // Skip rows whose name doesn't resolve. De-dup codes in-loop: a unique
+    // violation would abort the whole Postgres transaction, so we must never
+    // attempt a duplicate write (the file is already deduped, but never trust
+    // the input) — first write wins.
+    const seenCodes = new Set<string>();
     for (const bc of clean.barcodes) {
       const itemId = itemIdByName.get(bc.itemName);
       if (!itemId) continue;
-      try {
-        await tx.barcode.create({ data: { code: bc.code, itemId } });
-      } catch {
-        // Duplicate code (unique PK) — ignore; first write wins.
-      }
+      if (seenCodes.has(bc.code)) continue;
+      await tx.barcode.create({ data: { code: bc.code, itemId } });
+      seenCodes.add(bc.code);
     }
   });
 

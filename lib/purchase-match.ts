@@ -1,5 +1,5 @@
 // lib/purchase-match.ts
-import { resolveItem, normalizeName, type ItemRef } from "@/lib/items";
+import { resolveItem, type ItemRef } from "@/lib/items";
 
 export type ManualCtx = { byBarcode: Map<string, string>; existing: ItemRef[]; itemsOwningBarcode: Set<string> };
 export type ManualResult =
