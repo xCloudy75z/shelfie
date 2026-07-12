@@ -7,7 +7,7 @@
 - **GitHub repo (public):** https://github.com/xCloudy75z/shelfie
 - **Local path:** `C:\Users\games\Documents\xCloudy\IDEAS\Shelfie`
 - **Owner:** Abdulla (UAE). Non-technical founder; provides direction, AI implements.
-- **Status at time of writing:** Core app (Plan 1) fully shipped & live. **Receipt import (Plan 2) now works end-to-end on Vercel** (server-side PDF read fixed 2026-07-12 — see §15.5). **Receipt Import v2** (barcode identity, per-item offers, accuracy self-check) is designed and awaiting approval — see `docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`.
+- **Status at time of writing:** Core app (Plan 1) fully shipped & live. **Receipt import (Plan 2) now works end-to-end on Vercel** (server-side PDF read fixed 2026-07-12 — see §15.5). **Receipt Import v2** (barcode identity, per-item offers, auto-detected trip date, per-unit prices, multi-buy, dedupe, "Start fresh" reset) is **shipped & verified live (2026-07-12)** — see `docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`.
 
 ---
 
@@ -60,7 +60,7 @@ It serves three real moments:
 - **Receipt PDF import** — **working end-to-end on Vercel** (server-side Node read; fixed 2026-07-12, see §15.5). Upload the Carrefour PDF → server parses → review list with a green "Total matches ✓" → save.
 
 ### ❌ Broken / incomplete
-- **None currently.** The last open problem — receipt import — was fixed on 2026-07-12 (§15.5). The next planned work is **Receipt Import v2** (barcode identity, per-item offers, accuracy self-check): designed and awaiting owner approval (`docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`).
+- **None.** Receipt import + **Receipt Import v2** (barcode identity two-way, per-item offers, auto-detected trip date anchored to the Invoice-Date line, per-unit prices, multi-buy, dual dedupe, scrollable Month list, "Start fresh" reset) are **shipped & verified live on 2026-07-12** (103 unit tests; design + plan + build adversarial reviews). Barcode validation is intentionally lenient (real Carrefour codes fail the GTIN check digit). Optional polish remains — show barcode · merge tool · camera scanning (+ "scan → price story" idea) — see the hub progress board.
 
 ---
 

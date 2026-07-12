@@ -8,7 +8,7 @@
 - **Project:** Shelfie — a deliberately simple, single-user UAE grocery **price + budget tracker** (a much-simpler rebuild of an over-built app called FilsWise). 3 tabs, one 4-digit PIN, ~6 DB tables.
 - **Live app:** https://shelfie-gamma-seven.vercel.app · **Hub:** https://xcloudy75z.github.io/shelfie/ · **Repo:** https://github.com/xCloudy75z/shelfie
 - **Local working dir:** `C:\Users\games\Documents\xCloudy\IDEAS\Shelfie` (NOT the stale `IDEAS\FilsWise#2`).
-- **State:** The whole app is **built and live and working** EXCEPT one thing — **receipt PDF import is broken** (server-side PDF text extraction throws on Vercel). That is the only open task. See §5.
+- **State:** The whole app is **built, live, and working** — including **receipt PDF import + Receipt Import v2** (barcode identity two-way, per-item offers, auto-detected trip date, per-unit prices, multi-buy, dedupe, plus a "Start fresh" reset) — all **verified live on 2026-07-12**. No open blockers. Remaining work is optional polish (see §5): *show the barcode*, *merge tool*, *camera scanning* (+ the owner's "scan → price story" idea).
 
 ---
 
@@ -67,7 +67,15 @@ Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Lo
 
 ---
 
-## 5. THE ONLY OPEN TASK — fix receipt import (server-side extraction on Vercel)
+## 5. Receipt import — ✅ DONE, and Receipt Import v2 SHIPPED (2026-07-12)
+
+**Status:** Receipt import works end-to-end on Vercel, and **Receipt Import v2 is built, tested (103 unit tests), reviewed (design + plan + build adversarial passes), and verified live** on the owner's iPhone. Shipped: barcode-based item identity (two-way — receipt capture + optional manual barcode; **lenient** validation since real Carrefour codes fail the GTIN check digit, e.g. `071727355039`), per-item on-offer toggle, no-barcode "check this" flag, "same as"/detach linking, dual (barcode+legacy) dedupe, multi-buy, auto-detected trip date (anchored to the "Invoice Date" line, `DD-Mon-YYYY`), per-unit prices in Prices, a scrollable Month purchases box (~4 rows), and a confirmation-gated **"Start fresh"** wipe. Spec: `docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`; plan: `plans/2026-07-12-shelfie-receipt-import-v2.md`; live roadmap: the hub progress board.
+
+**Remaining (optional polish, owner-prioritised):** *Show the captured barcode* on Prices/review (makes manual linking easy to verify), the *merge tool* (fold already-split duplicates), and *camera scanning* (needs an on-device iOS test first) — plus the owner's idea: **scan in-store → open that item's price story**.
+
+<details><summary>Original blocker (now resolved) — kept for history</summary>
+
+### The original open task — fix receipt import (server-side extraction on Vercel)
 
 **Context:** Reading the Carrefour PDF *on the phone* (iOS Safari) is a dead-end — it failed 7 different ways (hang → cmaps → main-thread → legacy build → `undefined is not a function`); root cause verified from pdf.js source (the browser worker never signals "ready" on iOS, and pdf.js won't fall back to main-thread on a *hang*). The owner **approved moving extraction to the server.** The server path (`parseReceiptUpload` in `app/actions/receipt.ts` → `lib/receipt-extract-server.ts`, pdf.js `legacy` build, main thread, `useSystemFonts:true`) is **PROVEN in local Node** (perfect 28-item parse) but is **currently throwing on Vercel's serverless runtime** — the app shows *"Couldn't read that PDF — is it the Carrefour receipt?"* (the `{error}` branch).
 
@@ -83,13 +91,15 @@ Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Lo
 3. **Likely fix:** drop `useSystemFonts`; instead point pdf.js at on-disk assets available in the function — `standardFontDataUrl`/`cMapUrl` can be filesystem paths to `node_modules/pdfjs-dist/standard_fonts/` and `.../cmaps/` (or the copied `public/pdfjs/...`) read via Node, or pass a plain `Uint8Array` with font/eval features disabled. Because it's **Node**, the error is fully visible in logs (unlike the iOS black box) — so this is tractable. **Do NOT change `lib/receipt.ts` or the row-reconstruction logic — they are correct.**
 4. **Verify end-to-end on the live URL** with a real receipt (owner tests on his phone): upload → server parses → review list of ~28 items with a green "Total matches ✓" badge → save → items appear in Month/Prices. Re-import the same file → duplicate warning. A non-receipt PDF → friendly error.
 
+</details>
+
 ---
 
 ## 6. First actions for a new session
 1. Read this file, then skim `docs/MASTER-DOCUMENTATION.md`.
 2. Confirm you're working in `C:\Users\games\Documents\xCloudy\IDEAS\Shelfie` (always `Set-Location -LiteralPath` there; the shell may default to the stale `FilsWise#2`).
-3. Sanity check: `cmd /c "npm install"` → `cmd /c "npm test"` (expect 54 pass) → `cmd /c "npm run build"` (clean).
-4. Tackle §5 with the systematic-debugging skill: **get the Vercel log error first**, then one targeted fix, then verify live.
+3. Sanity check: `cmd /c "npm install"` → `cmd /c "npm test"` (expect **103 pass**) → `cmd /c "npm run build"` (clean).
+4. Receipt import + Receipt Import v2 are DONE (§5). Any next work is the optional polish listed in §5 (show barcode · merge tool · scanning) — follow the full workflow (§1.4): brainstorm → spec → plan → subagent TDD → verify live.
 5. Keep the owner in the loop his way (§1.2): publish anything reviewable to the hub, use in-chat questions for decisions, and push often (auto-deploys). Update `docs/progress.html` as you go.
 
 ---
