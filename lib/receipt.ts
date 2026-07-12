@@ -16,6 +16,8 @@ export type ParsedReceipt = {
   sumFils: number;               // sum of line totals
   matchesTotal: boolean;
   warnings: string[];
+  fingerprint: string;           // new (barcode-based, raw parse)
+  legacyFingerprint: string;     // old name-based, raw parse
 };
 
 // name + qty + 6 two-decimal numbers (unitIncl, unitExcl, totalExcl, vatRate, vatAmount, totIncl)
@@ -68,7 +70,9 @@ export function parseReceipt(lines: string[]): ParsedReceipt {
   if (grandTotalFils === null) warnings.push("Couldn't find the receipt's grand total.");
   else if (!matchesTotal) warnings.push(`Parsed items add up to AED ${(sumFils/100).toFixed(2)} but the receipt total is AED ${(grandTotalFils/100).toFixed(2)} — please check before saving.`);
   if (items.length === 0) warnings.push("No items were recognised in this file.");
-  return { items, grandTotalFils, paidFils, sumFils, matchesTotal, warnings };
+  const fingerprint = computeFingerprint(items, grandTotalFils);
+  const legacyFingerprint = computeLegacyFingerprint(items, grandTotalFils);
+  return { items, grandTotalFils, paidFils, sumFils, matchesTotal, warnings, fingerprint, legacyFingerprint };
 }
 
 function fnv1a(payload: string): string {
