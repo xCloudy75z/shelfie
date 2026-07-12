@@ -143,4 +143,31 @@ The per-row `onOffer` checkbox value flows through `ImportReceiptInput.items[].o
 
 ## 14. Open questions
 
-None blocking. Defaults chosen: barcodes 8–14 digits; multi-buy of the same barcode creates separate purchase lines (not merged) for an accurate per-line record; review save allowed with a no-barcode-flagged row after the owner acknowledges it.
+None blocking. Defaults chosen: barcodes canonicalised (§15); multi-buy of the same barcode creates separate purchase lines (not merged) for an accurate per-line record; review save allowed with a no-barcode-flagged row after the owner acknowledges it.
+
+## 15. Adversarial review (2026-07-12) — findings folded in
+
+An Opus skeptical-engineer review attacked this design against the live code. 2 Critical + 9 Major + 4 Minor findings. Resolutions below are now part of the spec. **Three need explicit owner sign-off** (marked 🟠).
+
+**Critical**
+- **C1 — Legacy dedupe break.** Changing the fingerprint basis would make already-imported receipts re-import as duplicates. **Resolution:** on import, compute **both** the legacy name-hash **and** the new hash and treat a match on **either** as a duplicate; store the new hash. (§6 dedupe amended.)
+- **C2 — No way to correct a wrong barcode mapping before the merge tool. 🟠** Barcode-match is absolute, so a mis-taught barcode can't be re-pointed. **Resolution:** the review screen shows a **"not this item / detach"** control on any barcode-recognised row, so the owner can break a wrong mapping immediately (doesn't wait for the merge tool). *Owner: confirm you want this small control now.*
+
+**Major**
+- **M3 — Multi-buy crash.** Same barcode twice on one receipt would hit the `code` unique key inside the transaction and roll back the whole import. **Resolution:** per-run barcode cache + **create-if-absent** (never a bare create); attaching an already-present barcode is a no-op. (§6/§11.1.)
+- **M4 — Orphan-prune destroys taught barcodes.** Deleting an item's last purchase cascades away its barcodes. **Resolution:** an item with **≥1 barcode is never auto-deleted** on last-purchase deletion (it's kept as a barcode-only "known product"). (§4/§7.)
+- **M5 — Offer toggle vs the 3-sample gate. 🟠** Marking promo lines as offers can drop an item below the "≥3 non-offer samples" gate → verdict shows "not enough prices yet." This is *arguably correct* but a visible change. **Resolution (default):** accept it — a promo-heavy item honestly has too few full-price samples to judge. *Owner: agree, or should it fall back to an "based on offer prices" estimate instead?*
+- **M6 — Barcode formats fragment identity. 🟠** UPC-12 vs EAN-13 vs leading zeros = different keys = the very duplication we're fixing. **Resolution:** **canonicalise every barcode to GTIN-14** (left-pad with zeros) on both receipt capture and manual entry before it becomes the key; always handle barcodes as **strings**, never numbers. *Owner: this is a technical default — flagging it for awareness; no action needed unless you object.*
+- **M7 — Backup has no barcode rules.** **Resolution:** add a `validBarcode` whitelist (canonical GTIN-14), reject duplicate codes within a backup file, and skip barcode rows whose item name doesn't resolve on restore. (§4.)
+- **M8 — Privacy: capture net too broad.** Capturing "any digit run after an item" could grab a loyalty/tax/transaction number. **Resolution:** capture **only** a line literally prefixed `Barcode:` that **immediately** follows an item line. (§5/§10.)
+- **M9 — "current item" pointer never resets.** The footer transaction barcode would attach to the last product, and a stray total line matching the item regex would look "confirmed." **Resolution:** clear "current" on **any** non-item line (total/subtotal/VAT/payment/blank); only a `Barcode:` line directly after an item attaches. This also makes the count self-check correct. (§5.)
+- **M10 — Fingerprint source ambiguity.** **Resolution:** the fingerprint is **always** computed from the **immutable raw parse** (barcodes + parsed names + line totals), never from post-edit review state — so renames never affect dedupe. (§5.)
+- **M11 — Manual barcode + fuzzy name.** **Resolution:** a new barcode whose typed name *fuzzy*-matches an existing item still shows the "same as X?" confirm; on "yes" the barcode attaches to X, on "no" a new item is created with the barcode. (§7.)
+
+**Minor**
+- **M12 — Check-digit.** Validate the EAN/UPC mod-10 check digit (not just length) to reject glyph-split/truncated codes. (§5.)
+- **M13 — Recurring no-barcode items.** Only flag a no-barcode row when it **doesn't** match an existing item by name, so known weighed produce / carrier bags aren't re-flagged every import. (§8.)
+- **M14 — Migration.** Ship `2_add_barcode` via `prisma migrate deploy` in `vercel-build` (already the pattern); confirm no live schema drift first.
+- **M15 — Normalized-name collision.** Note that "exact name match" is normalized equality; two distinct unique names can normalise alike (rare, single-user). Attach barcode to the first match; acceptable.
+
+**Owner sign-off needed on:** C2 (add the detach control now), M5 (accept "unknown" verdicts for promo-heavy items), M6 (GTIN-14 canonicalisation — awareness only). Everything else is folded in as a default.
