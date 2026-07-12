@@ -183,6 +183,7 @@ export async function importReceipt(
     }
   }
 
+  try {
   // --- Dedupe (dual key) ---
   // Check BOTH the new barcode-based fingerprint and the pre-v2 name-based one,
   // so a receipt imported before v2 still de-dupes on re-import.
@@ -300,4 +301,14 @@ export async function importReceipt(
   return warnings.length > 0
     ? { ok: true, imported: items.length, warnings }
     : { ok: true, imported: items.length };
+  } catch (err) {
+    // Instrumentation: surface the REAL save failure in the Vercel logs (error
+    // name/message/stack only — never item/barcode data). A graceful catch also
+    // beats an unhandled throw, which would give the user a generic crash.
+    console.error(
+      "[importReceipt] failed:",
+      err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : err,
+    );
+    return { error: "Couldn't save that receipt — the server hit an error." };
+  }
 }
