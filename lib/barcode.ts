@@ -41,7 +41,7 @@ export function displayBarcode(canonical: string | null | undefined): string {
   if (digits.length === 0) return ""; // no digits at all → garbage in, show nothing
   const significant = digits.replace(/^0+/, "");
   const n = significant.length;
-  if (n === 0) return "00000000"; // has digits but all zero (cannot occur from canonical)
+  if (n === 0) return ""; // all-zero digits → not a usable code, show nothing
   if (n > 14) return significant; // defensive: never produced by canonicalizeBarcode
   const target = [8, 12, 13, 14].find((len) => len >= n) ?? 14;
   return significant.padStart(target, "0");

@@ -18,8 +18,9 @@ export default function BarcodeLine({
     <div
       style={{
         display: "flex",
-        flexWrap: "wrap",
-        gap: 8,
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 4,
         margin: "4px 0 0",
       }}
     >

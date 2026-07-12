@@ -69,6 +69,12 @@ describe("displayBarcode", () => {
     expect(displayBarcode("")).toBe("");
     expect(displayBarcode("abc")).toBe("");
   });
+  it("treats an all-zero code as not usable → '' (nothing renders)", () => {
+    // canonicalizeBarcode("00000000") is non-null (8 digits), so this can reach
+    // the UI; displayBarcode must return "" so BarcodeLine renders nothing.
+    expect(displayBarcode("00000000")).toBe("");
+    expect(displayBarcode("00000000000000")).toBe("");
+  });
   it("returns >14 significant digits as-is (never seen from canonical)", () => {
     expect(displayBarcode("123456789012345")).toBe("123456789012345");
   });

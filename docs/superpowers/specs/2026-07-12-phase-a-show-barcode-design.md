@@ -47,7 +47,7 @@ One-line: *"Which barcode does the app think this item is? Show me, so I can che
 **Edge cases (accepted behaviour — pinned as tests, not bugs to fix)**
 - `n` between 9–11 → rounds up to 12; between 1–7 → rounds up to 8. For a code that was genuinely 9/10/11 digits this over-pads (accepted limitation — length isn't stored).
 - Leading-zero-heavy standard codes lose their extra zeros: printed `000000123456` (12) → significant `123456` (n=6) → target 8 → `00123456`. **Accepted, documented limitation** — do NOT add length storage to "fix" this in Phase A.
-- All-zero / empty-significant degenerate input (`n = 0`) → target length 8 → `"00000000"`. Cannot occur from `canonicalizeBarcode` (requires ≥8 input digits) but the helper stays total.
+- All-zero / empty-significant degenerate input (`n = 0`) → returns `""` (not a usable code, so nothing renders). Note `canonicalizeBarcode("00000000")` IS non-null (8 digits pass the length gate), so an all-zero code can reach the UI — returning `""` keeps the "nothing renders when there's no usable code" guarantee airtight (break-build F1).
 - Input longer than 14 or non-string: the helper only ever receives a stored canonical (already validated 14 digits). It should still be defensive — if given a non-14/garbage string, strip non-digits first and apply the same rule; if >14 significant digits return them as-is; never throw.
 
 **Location.** Add to `lib/barcode.ts` (co-located with `canonicalizeBarcode`, the inverse). Pure, string-in/string-out, fully unit-tested. This keeps the `"use server"` rule intact (it's a pure lib, not a server action).
