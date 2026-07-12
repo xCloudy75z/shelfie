@@ -29,7 +29,14 @@
 - The repo holds only code + mockups — **never real receipts, spending data, DBs, or secrets** (`.gitignore` hard-blocks them). Do NOT handle the DB password; the owner sets `DATABASE_URL`/`DIRECT_URL`/`SESSION_SECRET` in Vercel himself.
 
 ### 1.4 How we build (the "superpowers" workflow)
-For any feature: **brainstorm → write spec → write a bite-sized TDD plan (`plans/*.md`) → subagent-driven development (a fresh Opus subagent per task, each doing strict TDD: failing test → run → implement → pass → commit) → verify the real thing runs → adversarial code review.** No code before an approved design. Use the superpowers skills (brainstorming, writing-plans, subagent-driven-development, test-driven-development, verification-before-completion, systematic-debugging, requesting-code-review).
+For any feature: **brainstorm → write spec → write a bite-sized TDD plan (`plans/*.md`) → subagent-driven development (a fresh Opus subagent per task, strict TDD: failing test → run → implement → pass → commit) → verify the real thing runs.** No code before an approved design.
+
+**Adversarial "try to break it" at ALL THREE stages — mandatory, this is what produces the golden version:**
+1. **Break the SPEC** — before planning, a fresh skeptical Opus review attacks the *design* for correctness holes, edge cases, data-integrity and privacy risks. Fold findings in before writing the plan.
+2. **Break the PLAN** — before any code, a fresh skeptical Opus review attacks the *plan* itself: wrong/invalid test fixtures, bad task ordering, framework gotchas (e.g. `"use server"` export rules), missed spec coverage. Fold findings in before building.
+3. **Break the BUILD** — after coding, a fresh skeptical Opus review attacks the *implementation* against the spec's adversarial cases, THEN verify live on the real runtime (Vercel + the owner's phone). Fix anything found (failing test → fix → commit).
+
+Lesson (2026-07-12): a bug can survive spec + plan review and only die at build-review or live test (the over-strict barcode validator). So **all three passes AND a real live run are required** — none is optional. Use the superpowers skills (brainstorming, writing-plans, subagent-driven-development, test-driven-development, verification-before-completion, systematic-debugging, requesting-code-review).
 
 ### 1.5 Systematic debugging (used heavily — see the receipt saga)
 **No fixes without root-cause investigation first.** Read the actual error, reproduce, instrument boundaries, form ONE hypothesis, test the smallest change, verify. If 3+ fixes fail, **question the architecture** (this is exactly what led to moving receipt reading server-side).
