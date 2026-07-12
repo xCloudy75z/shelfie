@@ -6,6 +6,7 @@ import { parsePriceFils } from "@/lib/money";
 import { normalizeName, resolveItem } from "@/lib/items";
 import { dubaiMonthKey } from "@/lib/dates";
 import { guessCategory } from "@/lib/categories";
+import { findOrCreateCategory } from "@/lib/category-db";
 import { canonicalizeBarcode } from "@/lib/barcode";
 import { resolveManualIdentity, shouldDeleteOrphan } from "@/lib/purchase-match";
 
@@ -205,17 +206,14 @@ export async function deletePurchase(id: string): Promise<{ ok: true }> {
  * picked a category. Shared by the create / confirm-new / no-match paths.
  */
 async function createItem(input: AddPurchaseInput): Promise<string> {
-  const catName = input.categoryName?.trim() || guessCategory(input.itemName);
-  const cat = await db.category.upsert({
-    where: { name: catName },
-    update: {},
-    create: { name: catName },
-  });
+  const catName = input.categoryName?.trim() || guessCategory(input.itemName); // string | null
+  let categoryId: string | null = null;
+  if (catName) categoryId = await findOrCreateCategory(db, catName);
   const item = await db.item.create({
     data: {
       name: input.itemName.trim(),
       normalized: normalizeName(input.itemName),
-      categoryId: cat.id,
+      categoryId,
     },
   });
   return item.id;

@@ -231,7 +231,7 @@ export default function ReceiptImport() {
             quantity: it.quantity,
             unit: it.unit,
             priceAed: aedFromFils(it.lineFils).toFixed(2),
-            category: guessCategory(it.name),
+            category: guessCategory(it.name) ?? "",
             barcode: it.barcode ?? null,
             onOffer: false,
             knownItemName: h.knownItemName,
@@ -317,6 +317,7 @@ export default function ReceiptImport() {
         const res = await importReceipt({
           items,
           grandTotalFils,
+          paidFils: parsed.paidFils,
           fingerprint: parsed.fingerprint,
           legacyFingerprint: parsed.legacyFingerprint,
           ...(purchaseDate ? { purchasedAt: purchaseDate } : {}),
@@ -602,7 +603,7 @@ export default function ReceiptImport() {
                     : [row.category, ...PRESET_CATEGORIES]
                   ).map((c) => (
                     <option key={c} value={c}>
-                      {c}
+                      {c === "" ? "Uncategorized" : c}
                     </option>
                   ))}
                 </select>

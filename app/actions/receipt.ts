@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { normalizeName, resolveItem } from "@/lib/items";
 import { dubaiMonthKey } from "@/lib/dates";
 import { guessCategory } from "@/lib/categories";
+import { findOrCreateCategory } from "@/lib/category-db";
 import { parseReceipt, type ParsedReceipt } from "@/lib/receipt";
 import { resolveDraftIdentity } from "@/lib/receipt-match";
 
@@ -120,6 +121,8 @@ export type ImportDraft = {
 export type ImportReceiptInput = {
   items: ImportDraft[];
   grandTotalFils: number | null;
+  /** Amount actually paid (after discount), from the parse. Null when unknown. */
+  paidFils?: number | null;
   fingerprint: string;        // barcode-based, raw parse
   legacyFingerprint: string;  // old name-based, raw parse
   /** ISO date string; defaults to now when omitted. */
@@ -213,6 +216,10 @@ export async function importReceipt(
 
   const totalFils =
     grandTotalFils ?? items.reduce((sum, it) => sum + it.lineFils, 0);
+  const discountFils =
+    grandTotalFils != null && input.paidFils != null && input.paidFils < grandTotalFils
+      ? grandTotalFils - input.paidFils
+      : 0;
   const purchasedAt = input.purchasedAt ? new Date(input.purchasedAt) : new Date();
   const monthKey = dubaiMonthKey(purchasedAt);
 
@@ -230,7 +237,7 @@ export async function importReceipt(
 
   await db.$transaction(async (tx) => {
     const receiptImport = await tx.receiptImport.create({
-      data: { fingerprint, store: "Carrefour", totalFils },
+      data: { fingerprint, store: "Carrefour", totalFils, discountFils },
     });
 
     // Cache created categories within this run so repeated categories don't hit
@@ -257,16 +264,14 @@ export async function importReceipt(
         );
       } else {
         // create: new item (+ category), register it so later rows can reuse it.
-        const catName = guessCategory(draft.name);
-        let categoryId = categoryCache.get(catName);
-        if (!categoryId) {
-          const cat = await tx.category.upsert({
-            where: { name: catName },
-            update: {},
-            create: { name: catName },
-          });
-          categoryId = cat.id;
-          categoryCache.set(catName, categoryId);
+        const catName = guessCategory(draft.name); // string | null now
+        let categoryId: string | null = null;
+        if (catName) {
+          categoryId = categoryCache.get(catName) ?? null;
+          if (!categoryId) {
+            categoryId = await findOrCreateCategory(tx, catName);
+            categoryCache.set(catName, categoryId);
+          }
         }
         const created = await tx.item.create({
           data: { name: draft.name.trim(), normalized: normalizeName(draft.name), categoryId },
