@@ -119,6 +119,13 @@ Keep these in `lib/` with tests alongside the existing suites.
 5. A brand-new unknown item (manual or import) → shows as "Uncategorized," not "Groceries."
 6. Backup → restore → categories/re-files preserved.
 
+## 5b. Break-build pass — resolved (2026-07-12)
+- **F1 (Major, fixed):** the receipt-review screen had a per-row Category `<select>` that was **never consumed** (dead since before this feature) — the user's pick was silently discarded. In a category-accuracy feature that's misleading, and import-time categorisation was not in scope. **Removed the picker** (categories are set via the Prices re-file + the Month "Categories" manager). Could be added back as a proper designed feature later.
+- **F2 (Minor, accepted):** deleting SOME rows of a discounted trip over-subtracts the receipt-level discount from a now-smaller shelf total (clamped ≥0). Rare single-user action; documented.
+- **F3 (Minor, accepted):** editing ONE imported purchase's date into another month counts that receipt's discount in both months. Niche; documented.
+- **F4 (Minor, accepted follow-up):** `findOrCreateCategory` doesn't guard reserved names — not reachable from the UI (Log categories are DB-backed; `guessCategory` never returns a reserved word); a hand-crafted backup with `item.category = "Uncategorized"` is the only path. Follow-up hardening, not a ship blocker.
+- Everything else verified correct: discount math + derive-from-live-importId, no-data-loss deletes, case-insensitive uniqueness across all paths, all Month figures on paid, migration, restore wipe, both client islands.
+
 ## 5a. Break-spec pass — resolved (2026-07-12)
 - **F1 (Major):** discount denormalized on the import broke on purchase-delete → **derive discounts from live `Purchase.importId`; dropped the `monthKey` column** (§1.2, §1.4).
 - **F2 (Major):** restore left phantom discounts → derivation ignores importId-null restored rows; also `restoreBackup` now wipes `receiptImport` (§1.5).

@@ -16,7 +16,6 @@ import {
   type Hint,
 } from "@/app/actions/receipt";
 import { parsePriceFils, aedFromFils, formatAed } from "@/lib/money";
-import { guessCategory, PRESET_CATEGORIES } from "@/lib/categories";
 import { dubaiToday } from "@/lib/dates";
 import BarcodeLine from "@/app/components/BarcodeLine";
 
@@ -45,7 +44,6 @@ type Row = {
   quantity: number;
   unit: "each" | "kg";
   priceAed: string; // line total in AED, editable
-  category: string;
   barcode: string | null; // canonical GTIN-14 from the parse, carried unedited
   onOffer: boolean; // per-item "on offer" toggle (excluded from best-price benchmark)
   linkedItemId?: string; // "same as my X?" accepted → reuse that item + remember barcode
@@ -231,7 +229,6 @@ export default function ReceiptImport() {
             quantity: it.quantity,
             unit: it.unit,
             priceAed: aedFromFils(it.lineFils).toFixed(2),
-            category: guessCategory(it.name) ?? "",
             barcode: it.barcode ?? null,
             onOffer: false,
             knownItemName: h.knownItemName,
@@ -577,7 +574,7 @@ export default function ReceiptImport() {
                   </span>
                 </div>
               </div>
-              <div style={{ width: 104, flex: "none" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <label style={s.miniLabel}>Price (AED)</label>
                 <input
                   inputMode="decimal"
@@ -589,24 +586,6 @@ export default function ReceiptImport() {
                     borderColor: rowErrors.has(i) ? "var(--red)" : "var(--line)",
                   }}
                 />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <label style={s.miniLabel}>Category</label>
-                <select
-                  value={row.category}
-                  onChange={(e) => updateRow(i, { category: e.target.value })}
-                  aria-label="Category"
-                  style={s.field}
-                >
-                  {(PRESET_CATEGORIES.includes(row.category)
-                    ? PRESET_CATEGORIES
-                    : [row.category, ...PRESET_CATEGORIES]
-                  ).map((c) => (
-                    <option key={c} value={c}>
-                      {c === "" ? "Uncategorized" : c}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
             {rowErrors.has(i) && (

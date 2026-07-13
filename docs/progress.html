@@ -124,16 +124,16 @@ const PHASES=[
 
  {id:"accuracy", title:"Categories &amp; discount accuracy", status:"active",
   desc:"Budget now reflects what you actually PAID (receipt discounts netted out); plus add/rename/delete categories and re-file any item — so nothing is stuck in ‘Groceries’.",
-  note:"Built — 119 tests green, typecheck + build clean. Break-the-build pass next, then live verify. Items stay at shelf price; only the Month total + category filing change.",
+  note:"Built &amp; reviewed — 119 tests green. All three break-it passes done; awaiting your live check on the phone. Items stay at shelf price; only the Month total + category filing change.",
   steps:[
     {n:"Design approved", s:"done"},
     {n:"Spec + published", s:"done"},
     {n:"Break the spec", s:"done"},
     {n:"Plan (TDD)", s:"done"},
     {n:"Break the plan", s:"done"},
-    {n:"Build", s:"done"},
-    {n:"Break the build", s:"active"},
-    {n:"Live verify", s:"todo"}
+    {n:"Build · 119 tests", s:"done"},
+    {n:"Break the build", s:"done"},
+    {n:"Live verify (phone)", s:"active"}
   ],
   breaks:[
     {stage:"🛡️ Break the SPEC", verdict:"4 Major + fixes folded in", items:[
@@ -144,7 +144,10 @@ const PHASES=[
       "F5/F8 + more: case-different duplicate categories prevented; every budget figure now uses what you paid."]},
     {stage:"🛡️ Break the PLAN", verdict:"1 Major ordering fix + 2 minor", items:[
       "Major: the build steps were sequenced so an early commit wouldn’t compile — resequenced so every save builds cleanly.",
-      "2 minor code fixes caught before coding (an invalid database field select; a blank dropdown option now labelled ‘Uncategorized’)."]}
+      "2 minor code fixes caught before coding (an invalid database field select; a blank dropdown option now labelled ‘Uncategorized’)."]},
+    {stage:"🛡️ Break the BUILD", verdict:"1 Major fixed · rest verified", items:[
+      "Major: the receipt-review screen had a category dropdown that never actually did anything — removed it (you set categories on Prices + the Month manager instead).",
+      "3 minor edges verified acceptable; the discount math, safe deletes, and category tools all confirmed correct on the real code."]}
   ]},
 
  {id:"phaseB", title:"Phase B · Merge tool", status:"queued",
