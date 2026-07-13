@@ -7,6 +7,7 @@ import PriceItemPicker from "@/app/components/PriceItemPicker";
 import BarcodeLine from "@/app/components/BarcodeLine";
 import ItemCategoryPicker from "@/app/components/ItemCategoryPicker";
 import ItemMergeControl from "@/app/components/ItemMergeControl";
+import PriceScanButton from "@/app/components/PriceScanButton";
 
 // Reads are per-request against the DB — never at build time.
 export const dynamic = "force-dynamic";
@@ -57,6 +58,7 @@ export default async function PricesPage({
             honest &ldquo;good price?&rdquo; check show up here.
           </p>
         </div>
+        <PriceScanButton />
       </div>
     );
   }
@@ -107,6 +109,8 @@ export default async function PricesPage({
 
       {/* Item picker — selecting an item loads its price story instantly. */}
       <PriceItemPicker items={items} selectedId={selectedId} />
+
+      <PriceScanButton />
 
       {/* Item identity — shows regardless of whether the item has purchases yet
           (barcode-only items are deliberately kept — break-spec F2). */}
