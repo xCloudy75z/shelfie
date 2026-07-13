@@ -98,7 +98,12 @@ a {
 }
 
 .app-body {
-  padding: 30px 20px 108px;
+  /* viewport-fit=cover draws under the iOS status bar / home indicator in the
+     installed PWA — pad by the safe-area insets so the title clears the status
+     bar and content clears the (taller) tab bar. Insets are 0 in Safari, so the
+     browser layout is unchanged. */
+  padding: calc(30px + env(safe-area-inset-top, 0px)) 20px
+    calc(108px + env(safe-area-inset-bottom, 0px));
   min-height: 100vh;
 }
 
@@ -150,7 +155,8 @@ a {
 /* ---------- theme toggle ---------- */
 .theme-toggle {
   position: fixed;
-  top: 18px;
+  /* clear the iOS status bar in the installed PWA (0 inset in Safari). */
+  top: calc(18px + env(safe-area-inset-top, 0px));
   right: 18px;
   z-index: 100;
   width: 44px;
@@ -179,7 +185,10 @@ a {
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  height: 78px;
+  /* Grow by the home-indicator inset (not absorb it): the bar's bottom padding
+     already reserves env(safe-area-inset-bottom), so the height must include it
+     too or that space crushes the icons. 0 inset in Safari → 78px as before. */
+  height: calc(78px + env(safe-area-inset-bottom, 0px));
   background: var(--card);
   border-top: 1px solid var(--line);
   display: flex;
