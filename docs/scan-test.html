@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Shelfie — camera scan test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('shelfie-theme');if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<link rel="stylesheet" href="shelfie.css" />
+<style>
+  .wrap{max-width:520px;margin:0 auto;padding:40px 18px 70px}
+  h1{font-size:clamp(26px,6vw,36px);margin:6px 0 4px}
+  .sub{color:var(--ink-soft);font-size:15px;margin:0 0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow-sm);margin:0 0 16px}
+  .btn{width:100%;border:0;border-radius:14px;padding:16px;font-size:17px;font-weight:800;color:#fff;background:var(--green);cursor:pointer}
+  .btn.secondary{background:var(--card);color:var(--ink);border:1px solid var(--line);font-weight:700}
+  #reader{width:100%;border-radius:14px;overflow:hidden;margin-top:14px;background:#000;min-height:4px}
+  #reader video{width:100%!important;height:auto!important;display:block}
+  .hit{background:var(--green-soft);border:1px solid color-mix(in srgb,var(--green) 35%,var(--line));border-radius:14px;padding:16px;margin-top:14px;text-align:center}
+  .hit .code{font-family:var(--font-mono);font-size:26px;font-weight:700;color:var(--green-strong);letter-spacing:.04em;word-break:break-all}
+  .hit .fmt{font-size:12px;color:var(--ink-soft);margin-top:4px}
+  .err{background:var(--red-soft);border:1px solid var(--red);border-radius:14px;padding:14px;margin-top:14px;color:var(--red);font-weight:600;font-size:14px}
+  .diag{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:14px;white-space:pre-wrap;line-height:1.5}
+  .steps{font-size:14px;color:var(--ink-soft);line-height:1.6;margin:0;padding-left:20px}
+  .note{font-size:12px;color:var(--ink-faint);margin-top:14px}
+</style>
+</head>
+<body>
+  <button class="theme-toggle" aria-label="Toggle light/dark"><span class="moon">🌙</span><span class="sun">☀️</span></button>
+  <div class="wrap rise">
+    <h1>📷 Camera scan test</h1>
+    <p class="sub">A throwaway test — does your iPhone read a product barcode with the camera? Nothing is saved or uploaded; this isn't the real app.</p>
+
+    <div class="card">
+      <p style="margin:0 0 12px;font-weight:600">How to test:</p>
+      <ol class="steps">
+        <li>Tap <b>Start camera</b> and <b>Allow</b> the camera prompt.</li>
+        <li>Point the back camera at any product barcode (a grocery item, a book…).</li>
+        <li>Hold steady — a green box with the number means it worked. ✅</li>
+      </ol>
+      <p class="note">Best test: also tap Share → <b>Add to Home Screen</b>, open it from the icon, and try again — that's the “installed app” mode that matters.</p>
+    </div>
+
+    <button id="startBtn" class="btn" type="button">Start camera</button>
+    <button id="stopBtn" class="btn secondary" type="button" style="display:none;margin-top:10px">Stop</button>
+
+    <div id="result"></div>
+    <div id="reader"></div>
+    <div id="diag" class="diag" aria-live="polite">Ready. Tap “Start camera”.</div>
+  </div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+  var diagEl = document.getElementById('diag');
+  var resultEl = document.getElementById('result');
+  var startBtn = document.getElementById('startBtn');
+  var stopBtn = document.getElementById('stopBtn');
+  var html5Qr = null;
+  var log = [];
+
+  function diag(msg){ log.push(msg); diagEl.textContent = log.join('\n'); }
+
+  // Environment probe — useful either way.
+  (function probe(){
+    var secure = window.isSecureContext ? 'yes' : 'NO (camera needs https)';
+    var gum = (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? 'yes' : 'NO';
+    var nativeBD = ('BarcodeDetector' in window) ? 'yes (native)' : 'no (using JS fallback)';
+    var standalone = (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) ? 'yes (installed app)' : 'no (in browser)';
+    var lib = (typeof Html5Qrcode !== 'undefined') ? 'loaded' : 'FAILED TO LOAD';
+    diag('secure context: ' + secure);
+    diag('getUserMedia: ' + gum);
+    diag('native BarcodeDetector: ' + nativeBD);
+    diag('display mode: ' + standalone);
+    diag('scanner library: ' + lib);
+  })();
+
+  function showHit(text, fmt){
+    try { if (navigator.vibrate) navigator.vibrate(200); } catch(e){}
+    resultEl.innerHTML = '<div class="hit"><div style="font-weight:800;color:var(--green-strong);margin-bottom:6px">✅ Scanned!</div><div class="code">'+ text +'</div><div class="fmt">format: '+ (fmt||'?') +'</div></div>';
+    diag('HIT: ' + text + ' (' + (fmt||'?') + ')');
+  }
+  function showErr(msg){
+    resultEl.innerHTML = '<div class="err">⚠ ' + msg + '</div>';
+    diag('ERROR: ' + msg);
+  }
+
+  var FORMATS;
+  try {
+    FORMATS = [
+      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39
+    ];
+  } catch(e){ FORMATS = undefined; }
+
+  startBtn.addEventListener('click', function(){
+    resultEl.innerHTML = '';
+    if (typeof Html5Qrcode === 'undefined') { showErr('Scanner library did not load (network/CDN blocked).'); return; }
+    diag('starting camera…');
+    startBtn.style.display = 'none';
+    stopBtn.style.display = 'block';
+    try {
+      html5Qr = new Html5Qrcode('reader', FORMATS ? { formatsToSupport: FORMATS, verbose: false } : { verbose:false });
+    } catch(e){ showErr('init failed: ' + (e && e.message ? e.message : e)); return; }
+
+    html5Qr.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 260, height: 160 } },
+      function(decodedText, decodedResult){
+        var fmt = decodedResult && decodedResult.result && decodedResult.result.format ? decodedResult.result.format.formatName : '';
+        showHit(decodedText, fmt);
+      },
+      function(){ /* per-frame no-match, ignore */ }
+    ).then(function(){
+      diag('camera running — point at a barcode.');
+    }).catch(function(err){
+      startBtn.style.display = 'block';
+      stopBtn.style.display = 'none';
+      showErr('Could not start camera: ' + (err && err.message ? err.message : err));
+    });
+  });
+
+  stopBtn.addEventListener('click', function(){
+    if (html5Qr) { html5Qr.stop().then(function(){ html5Qr.clear(); diag('stopped.'); }).catch(function(){}); }
+    stopBtn.style.display = 'none';
+    startBtn.style.display = 'block';
+  });
+</script>
+<script src="theme.js"></script>
+</body>
+</html>
