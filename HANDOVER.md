@@ -206,4 +206,21 @@ A troubleshooting playbook so a new session doesn't spend 100 iterations redisco
 
 ---
 
-*You are fully oriented. The app is **feature-complete pending one live check** (Phase C/D — §5a). A/accuracy/B/hub are shipped & verified; **123 tests**. Follow §1's rules (esp. §1.4 break-it×3 + break-build×2, and use PowerShell not Bash) and §8's playbook.*
+---
+
+## 9. The Playbook & the way-of-working kit (meta-deliverables, 2026-07-13)
+
+Out of the Shelfie build we packaged the **way of working** into reusable form:
+- **`PLAYBOOK/`** (in this repo) — the portable reference: README + 8 sections (rules, workflow, stress-tests, docs, hub & review, mockups, scope, bootstrap) + `templates/`. Rendered on the hub as **`docs/playbook.html`** (linked from the front door; combined source `docs/PLAYBOOK.md`).
+- **`the-playbook`** — a **separate private repo** (`github.com/xCloudy75z/the-playbook`, v1.0.0), the **canonical master** any project adopts. Holds `CLAUDE.md` (the concise **constitution** = the enforcer that auto-loads per session), `PLAYBOOK/`, `ADOPT.md` (the adopt/audit/rebuild/sync procedures), `VERSION`, and `GUIDE.html` (a plain-English owner's guide; also a private claude.ai Artifact). Local clone: `C:\Users\games\Documents\xCloudy\the-playbook`.
+- **Adoption model = option C:** canonical master + a copy inside each project's repo (so it's present in every session incl. remote/cloud) + sync-on-demand. The `CLAUDE.md` uses `<!-- BEGIN/END way-of-working -->` managed-block markers so sync never clobbers a project's own rules.
+
+**⏳ Deferred to a future session (owner's call):**
+1. **Prove the kit on one real project** — audit Shelfie as a read-only demo, or adopt/audit another project (FinanceOS / FilsWise / Grabby / Anime Tracker) — owner picks. Use `the-playbook/ADOPT.md`; must be authed as the owner to reach the private master.
+2. **Then build the optional one-tap agent** (deferred until proven — build-cadence).
+
+Full session record: `sessions/2026-07-13_session-1_edit-popup-feature-complete-and-playbook.md`.
+
+---
+
+*You are fully oriented. The app is **feature-complete** (A→B→C/D all shipped & verified on the owner's iPhone; plus the Month edit-a-purchase pop-up). **129 tests.** The way-of-working is packaged (`PLAYBOOK/` + the private `the-playbook` kit) with proving + the agent deferred (§9). Follow §1's rules (esp. §1.4 break-it×3 + break-build×2, and use PowerShell not Bash) and §8's playbook.*
