@@ -213,17 +213,24 @@ const PHASES=[
 
  {id:"editPopup", title:"Purchase edit popup", status:"active",
   desc:"On Month, tap a purchase to edit or delete it in a clean floating popup — instead of the row expanding inline and shoving the list around.",
-  note:"Design approved by the owner. Spec written and attacked (break-spec: 14 findings, all folded in). Planning next → build → two build-breaks → your live verify.",
+  note:"Built, TDD'd (129 tests), and attacked at every gate — break-spec (14 findings), break-plan (3), break-build ×2 + a confirm pass. LIVE on Vercel, awaiting the owner's live verify on iPhone (Safari + installed app).",
   steps:[
     {n:"Design approved", s:"done"},
     {n:"Spec + break-spec", s:"done"},
-    {n:"Plan (TDD)", s:"active"},
-    {n:"Break the plan", s:"queued"},
-    {n:"Build", s:"queued"},
-    {n:"Break the build ×2", s:"queued"},
-    {n:"Live verify (iPhone)", s:"queued"}
+    {n:"Plan (TDD)", s:"done"},
+    {n:"Break the plan", s:"done"},
+    {n:"Build · 129 tests", s:"done"},
+    {n:"Break the build ×2", s:"done"},
+    {n:"Live verify (iPhone)", s:"active"}
   ],
   breaks:[
+    {stage:"🛡️ Break the BUILD ×2 (two independent skeptics)", verdict:"1 blocker + 1 major caught by pass 2 — fixed", items:[
+      "Pass 1 (correctness) said SHIP — the popup matched the old editor exactly, no data bugs. Pass 2 (real-use on the phone) caught what it structurally couldn't: with the keyboard open, the Save button sat hidden behind the keyboard. The popup now tracks the visible area so Save + every field stay reachable.",
+      "Pass 2 also caught that after editing, tapping outside did nothing (felt frozen) — now an outside tap on an edited form asks ‘Discard your changes?’ (Keep editing / Discard) instead of silently ignoring you.",
+      "Polish folded in: the delete step gets its red warning box back, the popup reads clearly in dark mode, a bigger close button, a tidy ‘Save’ label when the price is blank. A third confirm pass verified both fixes hold with no regressions."]},
+    {stage:"🛡️ Break the PLAN", verdict:"ready to build · 3 fixes folded in", items:[
+      "Independent review checked the plan against the real code — the action calls, the test count (123→129), and the focus-trap trick were all correct.",
+      "Fixed before any code: the popup now returns focus to where you were when it closes; a rare ‘Escape mid-save’ edge; and a keyboard-safe layout recipe."]},
     {stage:"🛡️ Break the SPEC", verdict:"sound after fixes · 14 findings folded in", items:[
       "Two blockers caught before any code: the popup would have let the theme toggle + bottom bar show through and stay tappable behind it; and the ‘swipe-back / Esc to close’ idea doesn’t actually work on the iPhone — both fixed in the design.",
       "Protects your edits: tapping outside to dismiss the keyboard won’t wipe your changes — an outside tap only closes when you’ve changed nothing; otherwise you use the ✕.",
