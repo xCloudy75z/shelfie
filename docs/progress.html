@@ -159,9 +159,9 @@ const PHASES=[
     {n:"Break the spec", s:"done"},
     {n:"Plan (TDD)", s:"done"},
     {n:"Break the plan", s:"done"},
-    {n:"Build", s:"active"},
-    {n:"Break the build ×2", s:"todo"},
-    {n:"Live verify (iPhone)", s:"todo"}
+    {n:"Build · 123 tests", s:"done"},
+    {n:"Break the build ×2", s:"done"},
+    {n:"Live verify (iPhone)", s:"active"}
   ],
   breaks:[
     {stage:"🛡️ Break the SPEC", verdict:"forward merge sound · 2 Major undo fixes", items:[
@@ -170,7 +170,11 @@ const PHASES=[
       "Guardrails: barcodes are moved BEFORE the old item is deleted (a wrong order would silently lose them); both items re-checked mid-merge; Undo disables after one tap.",
       "Confirmed safe: no data loss in the merge, the Month totals + discounts are unaffected, and price history stays same-unit."]},
     {stage:"🛡️ Break the PLAN", verdict:"passed clean — correct to execute", items:[
-      "Independent review verified every step against the real code (the load-bearing delete order, undo tolerances, page wiring, types) — no changes needed. Only cosmetic notes."]}
+      "Independent review verified every step against the real code (the load-bearing delete order, undo tolerances, page wiring, types) — no changes needed. Only cosmetic notes."]},
+    {stage:"🛡️ Break the BUILD ×2 (two independent skeptics)", verdict:"pass 1 clean · pass 2 found 2 real UX bugs · fixed + re-verified", items:[
+      "Pass 1 (data safety): SHIP — the merge/undo can't lose data; Month totals unaffected.",
+      "Pass 2 (real-use): caught 2 that pass 1 missed — merging on a 2-item list showed NO confirmation or Undo (silent), and Undo only lasted 4 seconds. Both fixed: a persistent ‘Merged ✓ · Undo’ banner that always shows and never times out.",
+      "A third quick pass confirmed both fixes hold with no regressions. This is exactly why you asked for two build-breaks."]}
   ]},
 
  {id:"phaseC", title:"Phase C · Camera scanning", status:"queued",

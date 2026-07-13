@@ -87,6 +87,12 @@ Pure helper (unit-tested) in `lib/merge.ts`: `validateMerge(survivorId, mergedId
 4. Merge into an item, then open Month → the merged purchases still sum correctly (no double count, no loss).
 5. Try to merge an item into itself → blocked with a friendly message (or the option isn't offered).
 
+## 7b. Break-build passes ×2 — resolved (2026-07-13)
+Two independent skeptic passes (owner rule). Pass 1 (data integrity) = **SHIP** (merge/undo lose no data; discount-by-importId unaffected; ordering correct). Pass 2 (client/UX) caught **2 Major** the data pass missed, both fixed in `ItemMergeControl.tsx` and confirmed by a focused re-check:
+- **Silent merge on a 2-item account:** after a merge that emptied the "other items" list, the component `return null`ed before the toast/Undo rendered → no confirmation, no undo. Fixed: the Undo affordance renders regardless of the list; the early return only fires when there's genuinely nothing to show.
+- **4-second Undo window:** Undo lived inside an auto-dismiss toast. Fixed: a **persistent "Merged ✓ · Undo" banner** (no timer) that survives the post-merge navigation and stays until Undo / dismiss / next merge.
+- Also folded in: re-entrancy guards, disabled-state styling, autofocus, and removal of all `setTimeout` timers. Two LOW nits accepted (banner may follow you to another item if not dismissed — undo still works; ✕ not disabled mid-undo — harmless).
+
 ## 7a. Break-spec pass — resolved (2026-07-13)
 - **Undo name @unique collision (Major, fixed):** undo folds into an existing same-name item if the name was re-taken, else recreates (§4).
 - **Undo deleted-category FK (Major, fixed):** undo recreates with `categoryId: null` when the snapshotted category is gone (§4).
