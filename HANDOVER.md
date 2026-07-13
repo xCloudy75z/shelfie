@@ -8,7 +8,8 @@
 - **Project:** Shelfie — a deliberately simple, single-user UAE grocery **price + budget tracker** (a much-simpler rebuild of an over-built app called FilsWise). 3 tabs, one 4-digit PIN, ~6 DB tables.
 - **Live app:** https://shelfie-gamma-seven.vercel.app · **Hub:** https://xcloudy75z.github.io/shelfie/ · **Repo:** https://github.com/xCloudy75z/shelfie
 - **Local working dir:** `C:\Users\games\Documents\xCloudy\IDEAS\Shelfie` (NOT the stale `IDEAS\FilsWise#2`).
-- **State:** The whole app is **built, live, and working**. Shipped & verified live: receipt PDF import + Receipt Import v2 (2026-07-12); then **Phase A — show the barcode** (chip + red "NO BARCODE" flag), **Categories & discount accuracy** (Month budget reflects amount PAID; add/rename/delete categories; re-file items; unknown → "Uncategorized"), and **Phase B — merge tool** (fold two items into one, choose surviving name, one-tap undo) — all **verified on the owner's phone (2026-07-13)**. **123 unit tests.** No open blockers. **Only remaining phase: C/D — camera scanning** (feasibility-gated on an on-device iPhone-PWA camera spike + the owner's go-ahead on adding the scanner library; C11). Roadmap/decisions: `polish-phases-decisions.txt`.
+- **State (2026-07-13):** The whole app is **built, live, and working**. Shipped & verified on the owner's phone: receipt PDF import + Receipt Import v2; **Phase A — show the barcode** (bordered-chip barcode + red "NO BARCODE" flag on un-barcoded receipt rows); **Categories & discount accuracy** (Month budget reflects amount PAID = shelf − receipt discount; add/rename/delete categories; re-file items; unknown → "Uncategorized"); **Phase B — merge tool** (fold two items into one, choose surviving name, one-tap undo). Also shipped: the **hub redesign** (sidebar + build-timeline layout).
+- **⏳ THE ONE OPEN ITEM — Phase C/D (camera scanning) is BUILT, double-break-reviewed, and LIVE, awaiting the owner's live verify on his iPhone (incl. the installed Home-Screen PWA).** The feasibility spike PASSED (his iPhone read a real EAN-13). He approved building it (C11). It adds `html5-qrcode` (dynamically imported), a `BarcodeScanner` overlay, and "📷 Scan" buttons on Log (scan → identify/prefill or new item) and Prices (scan → open the price story / "start tracking"). **His verify checklist is §5a.** **123 unit tests.** Once he signs off, the whole A→B→C/D roadmap is complete and the app is feature-complete. Roadmap/decisions: `polish-phases-decisions.txt`.
 
 ---
 
@@ -31,14 +32,12 @@
 ### 1.4 How we build (the "superpowers" workflow)
 For any feature: **brainstorm → write spec → write a bite-sized TDD plan (`plans/*.md`) → subagent-driven development (a fresh Opus subagent per task, strict TDD: failing test → run → implement → pass → commit) → verify the real thing runs.** No code before an approved design.
 
-**Adversarial "try to break it" at ALL THREE stages — mandatory, this is what produces the golden version:**
+**⚠️ ADVERSARIAL "try to break it" is MANDATORY at ALL THREE ARTIFACTS — the SPEC, the PLAN, *and* the built APP CODE. This is not optional and is the owner's explicit requirement — it is what produces the golden version. Every one of the three must be attacked by a fresh, skeptical Opus subagent, and every finding folded in before moving on:**
 1. **Break the SPEC** — before planning, a fresh skeptical Opus review attacks the *design* for correctness holes, edge cases, data-integrity and privacy risks. Fold findings in before writing the plan.
-2. **Break the PLAN** — before any code, a fresh skeptical Opus review attacks the *plan* itself: wrong/invalid test fixtures, bad task ordering, framework gotchas (e.g. `"use server"` export rules), missed spec coverage. Fold findings in before building.
-3. **Break the BUILD** — after coding, a fresh skeptical Opus review attacks the *implementation* against the spec's adversarial cases, THEN verify live on the real runtime (Vercel + the owner's phone). Fix anything found (failing test → fix → commit).
+2. **Break the PLAN** — before any code, a fresh skeptical Opus review attacks the *plan* itself: wrong/invalid test fixtures, bad task ordering, framework gotchas (e.g. `"use server"` export rules, dynamic-import bundling), missed spec coverage. Fold findings in before building.
+3. **Break the BUILD — TWICE (two INDEPENDENT passes, owner rule 2026-07-13).** After coding, run **two separate fresh skeptics with DIFFERENT lenses** — pass 1: correctness / data-integrity / bundling; pass 2: real-use UX / device edge cases / "what pass 1 missed." (In Phase C/D, pass 2 caught two blockers pass 1 declared SHIP — this is exactly why two passes are required.) Fix everything, then verify live on the real runtime.
 
-Lesson (2026-07-12): a bug can survive spec + plan review and only die at build-review or live test (the over-strict barcode validator). So **all three passes AND a real live run are required** — none is optional.
-
-**Refinement (2026-07-13, Phase B onward):** run **TWO independent break-the-build passes** (two fresh skeptic subagents) before the owner's live verify — flow is spec → break-spec → plan → break-plan → build → **break-build ×2** → live verify (on the Android; see §1.10). Use the superpowers skills (brainstorming, writing-plans, subagent-driven-development, test-driven-development, verification-before-completion, systematic-debugging, requesting-code-review).
+**The full flow, every feature:** brainstorm → design approved → spec → **break-spec** → plan → **break-plan** → build (subagent TDD) → **break-build ×2** → **owner live-verifies on his phone**. A bug can survive spec + plan review and only die at build-review or the live run (e.g. the over-strict barcode validator; the Phase C/D new-item-scan barcode drop) — so **all four gates (3 breaks + live run) are required; none is optional.** Use the superpowers skills (brainstorming, writing-plans, subagent-driven-development, test-driven-development, verification-before-completion, systematic-debugging, requesting-code-review).
 
 ### 1.5 Systematic debugging (used heavily — see the receipt saga)
 **No fixes without root-cause investigation first.** Read the actual error, reproduce, instrument boundaries, form ONE hypothesis, test the smallest change, verify. If 3+ fixes fail, **question the architecture** (this is exactly what led to moving receipt reading server-side).
@@ -56,8 +55,8 @@ Update the hub progress board (`docs/progress.html`) and the docs **continuously
 Destructive DB operations (wipe / reset / drop) **always confirm first**, and are built confirmation-gated in the UI (the app has a "Start fresh" reset that keeps the PIN). Deleting files: show the full list → get explicit approval → confirm done.
 
 ### 1.10 Devices & testing (owner setup — locked 2026-07-13)
-The owner works across **4 devices**: **① Local PC** (dev machine — git/build/deploy), **② iPhone = "Remote 1"** (his own phone; the **actual keeper / device of record**; currently at home — phones barred in college), **③ College PC = "Remote 2"**, **④ College phone (Android) = "Remote 3"** (loaner — **all live testing happens here now**).
-- **Live-verify on the Android (Remote 3)** by default — "check it on your phone" = Android/Chrome (install via Chrome ⋮ → "Add to Home screen").
+The owner works across **4 devices**: **① Local PC** (dev machine — git/build/deploy), **② iPhone = "Remote 1"** (his own phone; the **actual keeper / device of record**), **③ College PC = "Remote 2"**, **④ College phone (Android) = "Remote 3"** (a loaner — phones are barred in college, so at college he tests on this).
+- **Live-verify targets whichever device the owner currently has** — he'll tell you (Android/Chrome at college, iPhone/Safari at home). Don't assume; ask or follow his cue. Install: Android = Chrome ⋮ → "Add to Home screen"; iOS = Share → Add to Home Screen.
 - **Trigger phrase "iPhone Update":** when the owner says it, share ALL steps to do on the **iPhone (Remote 1)** — iOS Safari install/update (Share → Add to Home Screen), tap **Update** on Month → App version, verify. That's when the iPhone syncs to the latest app.
 - **Never suggest exporting a backup from the Android** — the owner won't (data is server-side, so a device switch needs no backup).
 - **Key nuance:** Shelfie is single-user + server-backed (one Neon DB, one PIN) → **all devices share the SAME data**. Android testing writes to the data the iPhone keeps; there is no isolation, so avoid the "Start fresh" reset / bulk deletes on the Android unless a real wipe is intended.
@@ -75,7 +74,17 @@ The owner works across **4 devices**: **① Local PC** (dev machine — git/buil
 ---
 
 ## 3. What's DONE and live (don't redo)
-Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Log** (manual entry + mobile typeahead + item-identity confirm); **Prices** (unit-price verdict, offer-excluded, 3-sample gate, instant load); **Month** (pay-cycle budget/pace, category bars, edit/delete purchases); **Backup & Restore** (validated, snapshot+undo); **auto-update + version stamp**; **installable PWA + icons**. **54 unit tests green**, 3 review passes. The receipt **parser** (`lib/receipt.ts`) is also done and **proven correct**. **Receipt import + Receipt Import v2 are now fully shipped & verified live (2026-07-12)**: server-side PDF read on Vercel, barcode identity (two-way, **lenient** validation — real Carrefour codes fail the GTIN check digit), per-item offers, no-barcode flag, "same as"/detach linking, dual dedupe, multi-buy, auto-detected trip date (anchored to the "Invoice Date" line), per-unit prices, a scrollable Month purchases box, and a confirmation-gated **"Start fresh"** reset. **103 unit tests green.**
+Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Log** (manual entry + mobile typeahead + item-identity confirm); **Prices** (unit-price verdict, offer-excluded, 3-sample gate, instant load); **Month** (pay-cycle budget/pace, category bars, edit/delete purchases); **Backup & Restore** (validated, snapshot+undo); **auto-update + version stamp**; **installable PWA + icons**. The receipt **parser** (`lib/receipt.ts`) is proven correct. **Receipt import + Receipt Import v2** shipped & verified live (2026-07-12): server-side PDF read on Vercel, barcode identity (two-way, **lenient** validation — real Carrefour codes fail the GTIN check digit), per-item offers, no-barcode flag, "same as"/detach linking, dual dedupe, multi-buy, auto-detected trip date, per-unit prices, scrollable Month purchases box, confirmation-gated **"Start fresh"** reset.
+
+**Phases shipped 2026-07-13 (all verified on the owner's phone unless noted):**
+- **Phase A — Show the barcode:** `displayBarcode()` un-pads the canonical GTIN to the printed form (strip padding → restore to nearest standard length 8/12/13/14); shown as a **bordered chip** on Prices + receipt review; un-barcoded receipt rows flag **red "NO BARCODE"** (`app/components/BarcodeLine.tsx`, `ItemMergeControl` unrelated). Files: `lib/barcode.ts` (`displayBarcode`), `BarcodeLine.tsx`.
+- **Categories & discount accuracy:** Month "Spent"/budget = amount **PAID** (shelf − per-trip `ReceiptImport.discountFils`, derived from LIVE `Purchase.importId` so a delete/restore can't leave a phantom discount); items stay at shelf price; category chart stays shelf-based + footnote. Unknown items file as **Uncategorized** (`guessCategory` returns `string|null`). Add/rename/delete categories (`CategoryManager` on Month, reserved-name + case-insensitive guards) + re-file items (`ItemCategoryPicker` on Prices). `restoreBackup` wipes stale `ReceiptImport`. Migration `3_receipt_discount`. Files: `lib/categories.ts`, `lib/category-db.ts`, `app/actions/categories.ts`, `app/components/{CategoryManager,ItemCategoryPicker}.tsx`.
+- **Phase B — Merge tool:** on the Prices item view, fold two items into one — owner taps which name to keep (survivor keeps name+category); the other's purchases + barcodes repoint to it, then it's deleted; **persistent "Merged ✓ · Undo" banner** (NOT a timed toast). `mergeItems`/`undoMerge` in `app/actions/merge.ts`; `lib/merge.ts` (`validateMerge`, `MergeUndo`); `app/components/ItemMergeControl.tsx`.
+- **Hub redesign:** the front door (`docs/index.html`) is now a sidebar + build-timeline; the board (`docs/progress.html`) is append-only per-phase cards with preserved break-it findings; mockups under `docs/hub-mockups/`.
+
+**Phase C/D — Camera scanning: BUILT + double-break-reviewed + LIVE, awaiting the owner's iPhone verify (§5a).** `html5-qrcode` (dynamically imported — stays out of the initial bundle), `app/components/BarcodeScanner.tsx` (GTIN-only formats, stop-on-read, portal overlay, hardened camera teardown), `lookupBarcode` in `app/actions/scan.ts`, `PriceScanButton.tsx`, and a 📷 button + `initialBarcode` hand-off wired into `PurchaseForm`/`log/page`/`prices/page`. `app/layout.tsx` got `viewportFit:"cover"`.
+
+**123 unit tests green.** Every phase ran the full break-spec → break-plan → break-build(×2 from Phase B) workflow; findings preserved on the hub board.
 
 ---
 
@@ -93,9 +102,18 @@ Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Lo
 
 **Status:** Receipt import works end-to-end on Vercel, and **Receipt Import v2 is built, tested (103 unit tests), reviewed (design + plan + build adversarial passes), and verified live** on the owner's iPhone. Shipped: barcode-based item identity (two-way — receipt capture + optional manual barcode; **lenient** validation since real Carrefour codes fail the GTIN check digit, e.g. `071727355039`), per-item on-offer toggle, no-barcode "check this" flag, "same as"/detach linking, dual (barcode+legacy) dedupe, multi-buy, auto-detected trip date (anchored to the "Invoice Date" line, `DD-Mon-YYYY`), per-unit prices in Prices, a scrollable Month purchases box (~4 rows), and a confirmation-gated **"Start fresh"** wipe. Spec: `docs/superpowers/specs/2026-07-12-receipt-import-v2-design.md`; plan: `plans/2026-07-12-shelfie-receipt-import-v2.md`; live roadmap: the hub progress board.
 
-**Remaining (2026-07-13):** Phase A (show barcode), Categories & discount accuracy, and Phase B (merge tool) are all **SHIPPED & verified** (see §3 / the hub board). The **only** remaining phase is **C/D — camera scanning** + the owner's "scan in-store → open that item's price story" idea, which is **feasibility-gated**: prove the camera works in the owner's installed iPhone PWA (a throwaway on-device spike) AND get his go-ahead on adding the scanner lib (@zxing/browser or html5-qrcode) — decision C11 — before building. Note the two-break-build rule (§1.4) and that live-verify targets the owner's current device (Android at college / iPhone at home — §1.10).
+## 5a. THE PENDING ITEM — Phase C/D camera scanning: owner live-verify (do this first)
 
-**Categories & discount accuracy (Phase A) — BUILT 2026-07-12, awaiting break-build + live verify.** The Month "Spent"/budget now reflects what was actually PAID: each receipt stores a per-trip `discountFils` (shelf grand total − paid) and the Month derives the netted total from LIVE `Purchase.importId` (so deleting/restoring an imported item can never leave a phantom discount); items stay at shelf price and the category chart stays shelf-based. Unknown items now file as **Uncategorized** (null `categoryId`), not "Groceries" — `guessCategory` returns `string | null`. The owner can add/rename/delete categories (Month → Categories card, `CategoryManager`) with reserved-name + case-insensitive-dupe guards, and re-file any item on Prices (`ItemCategoryPicker`); deleting a category moves its items to Uncategorized. Backup restore wipes stale `ReceiptImport` rows. 119 unit tests green, typecheck + build clean. Spec: `docs/superpowers/specs/2026-07-12-categories-and-discounts-design.md`; plan: `plans/2026-07-12-shelfie-categories-and-discounts.md`. Migration `3_receipt_discount` applies on Vercel at deploy.
+Phase C/D is **built, double-break-reviewed, and live**. The owner will report back next session. **His verify checklist (he does this on his iPhone — Safari AND the installed Home-Screen PWA, the historically risky context):**
+1. Log → **📷 Scan** a tracked item → its name **prefills** ("Recognized: …") → save.
+2. Log → 📷 Scan a **NEW** item → the barcode stays, name blank → type name + price → save → item created **WITH the barcode**; scan it again → now "Recognized" (the teach-loop — a break-build fix; verify it works).
+3. Prices → 📷 Scan a tracked item → its **price story** opens; scan an untracked one → **"No history yet — start tracking?"** → tap → lands on Log with the barcode prefilled.
+4. Scanner shows **"Starting camera…"**, **stops on the first read**, camera light turns off on close.
+5. **Confirm all of the above in the INSTALLED Home-Screen app**, not just Safari.
+
+If any step fails, **root-cause first** (§1.5) — read the actual error; the camera errors surface in the overlay. Spec: `docs/superpowers/specs/2026-07-13-phase-cd-scanning-design.md`; plan: `plans/2026-07-13-shelfie-phase-cd-scanning.md`. If it's all good → mark the Phase C/D card done on the board + hub timeline, and the app is **feature-complete**.
+
+Specs/plans for the shipped phases (for reference): Phase A `2026-07-12-phase-a-show-barcode-design.md`; Categories/discounts `2026-07-12-categories-and-discounts-design.md`; Phase B `2026-07-13-phase-b-merge-tool-design.md`. All under `docs/superpowers/specs/` with matching `plans/*.md`.
 
 <details><summary>Original blocker (now resolved) — kept for history</summary>
 
@@ -122,9 +140,10 @@ Plan 1 (core, 16 tasks) + several extras, all shipped: PIN lock + throttle; **Lo
 ## 6. First actions for a new session
 1. Read this file, then skim `docs/MASTER-DOCUMENTATION.md`.
 2. Confirm you're working in `C:\Users\games\Documents\xCloudy\IDEAS\Shelfie` (always `Set-Location -LiteralPath` there; the shell may default to the stale `FilsWise#2`).
-3. Sanity check: `cmd /c "npm install"` → `cmd /c "npm test"` (expect **103 pass**) → `cmd /c "npm run build"` (clean).
-4. Receipt import + Receipt Import v2 are DONE (§5). Any next work is the optional polish listed in §5 (show barcode · merge tool · scanning) — follow the full workflow (§1.4): brainstorm → spec → plan → subagent TDD → verify live.
-5. Keep the owner in the loop his way (§1.2): publish anything reviewable to the hub, use in-chat questions for decisions, and push often (auto-deploys). Update `docs/progress.html` as you go.
+3. Sanity check: `cmd /c "npm install"` → `cmd /c "npm test"` (expect **123 pass**) → `cmd /c "npm run build"` (clean).
+4. **First real task: the owner's Phase C/D live-verify result (§5a).** If he confirms it works → mark C/D done (board + hub) and the app is feature-complete. If he reports a problem → root-cause first (§1.5, §8). Everything else (A, accuracy, B, hub) is DONE — don't redo.
+5. Keep the owner in the loop his way (§1.2): publish anything reviewable to the hub, use in-chat questions for decisions, push often, and **verify each deploy reached Ready** (§7, §8 — the git auto-deploy sometimes doesn't fire). Update `docs/progress.html` as you go, preserving per-phase cards + break-it findings (owner requirement — never overwrite/reorder shipped cards).
+6. **Use PowerShell, not the Bash tool, for shell ops here** (the Bash/git-bash tool fails against this repo — §8). Any new feature runs the full break-it×3 workflow (§1.4).
 
 ---
 
@@ -160,6 +179,31 @@ A troubleshooting playbook so a new session doesn't spend 100 iterations redisco
 
 **Prisma migrations** are hand-authored here (`prisma/migrations/N_name/migration.sql`, DB-free locally); `vercel-build` runs `prisma migrate deploy`. "No pending migrations to apply" in the build log is normal once a migration has already been applied on Neon.
 
+### New playbook entries (2026-07-13 session — Phases A/accuracy/B/C-D + hub)
+
+**Vercel git auto-deploy does NOT always fire on push.** More than once a `git push` reached GitHub (`git rev-parse origin/main` == HEAD) but Vercel created no new deployment for minutes. **Never assume push = deploy.** After every push, check `vercel ls shelfie` for a fresh Building/Ready row matching your commit. If none appears within ~2 min, **force it:** `cmd /c "vercel deploy --prod --force --yes"` (deploys the clean local working tree, aliases to production). Then confirm `vercel inspect <url>` → `status ● Ready` before telling the owner to test.
+
+**The Bash tool is unreliable in this environment — use PowerShell.** `Bash`/git-bash calls to `cmd`, `vercel`, `git`, even `ls` frequently exited 1 with no output. Do ALL shell work (git, npm via `cmd /c`, vercel) through the **PowerShell** tool. Pattern that works: `Set-Location -LiteralPath "…\IDEAS\Shelfie"; git …; cmd /c "npm …"`.
+
+**GitHub Pages lags ~1–2 min behind a push.** After pushing a hub/docs change, don't tell the owner it's live immediately — poll until the new content shows: `Invoke-WebRequest -Uri "https://xcloudy75z.github.io/shelfie/<page>?c=$i" -UseBasicParsing` in a short loop, check `.Content -match "<some new string>"`. New sub-folders (e.g. `hub-mockups/`) 404 until Pages rebuilds.
+
+**Poll-loop gotcha:** matching `status ● Ready` from `vercel inspect` output in a regex is finicky (the `●` char). Match `"Ready"`/`"Error"` loosely, or just read the block. Foreground `sleep` is blocked by the harness — poll external state with a check command in a short PowerShell `for` loop (short `Start-Sleep` inside is OK).
+
+**TWO break-build passes catch what one misses.** In Phase C/D, pass 1 (data/correctness lens) said SHIP; pass 2 (real-use/UX lens) found **two blockers** — always run two INDEPENDENT skeptics with different emphases (see §1.4). Same in Phase B (pass 2 caught the silent 2-item merge + 4s-undo).
+
+**Camera / html5-qrcode lessons (Phase C/D):**
+- iOS Safari has **no native `BarcodeDetector`** — use the `html5-qrcode` JS fallback (it worked on the owner's iPhone, reading EAN-13). The throwaway spike is `docs/scan-test.html`.
+- **Dynamic-import the lib** (`await import("html5-qrcode")`) and **destructure BOTH the class AND the format enum** from it — a top-level `import` of even the enum re-adds the browser-only lib to the initial/SSR bundle. Verified via build route sizes (must stay async chunk).
+- **GTIN-only formats** (`EAN_13/EAN_8/UPC_A`). Do NOT enable `CODE_128/CODE_39` (a shelf-edge label decodes to a bogus "barcode") or `UPC_E` (`canonicalizeBarcode` doesn't expand UPC-E→UPC-A, so it won't match stored codes).
+- **Camera-teardown race:** stop the **captured** instance, never a ref another path may have nulled, or the camera stays live (light on, "camera in use" on reopen). Portal the full-screen overlay to `document.body` (a parent `.rise` transform otherwise becomes the containing block and boxes a `position:fixed` overlay).
+- **Scan identity:** only arm "clear the scanned barcode when the name is edited" for a **recognized** barcode; for a NEW item leave it so typing the name keeps the barcode (else the new item saves with no barcode and never gets recognized).
+
+**Discount accuracy:** derive the netted total from **live `Purchase.importId`**, NOT a denormalized `monthKey` on `ReceiptImport` — the denorm version left a phantom discount after deleting/restoring an imported item (break-spec caught it).
+
+**Merge tool:** `Barcode.itemId` FK is `ON DELETE Cascade` (Purchase is `Restrict`) — you MUST move purchases + barcodes to the survivor **BEFORE** `item.delete`, or the merged item's barcodes are silently cascade-deleted. Merge undo must tolerate a re-taken name (fold into the existing same-name item) and a deleted category (restore as Uncategorized).
+
+**Categories:** `guessCategory` now returns `string | null` (null → Uncategorized). "Uncategorized"/"Other" are reserved names; uniqueness is case-insensitive via `findOrCreateCategory` (`lib/category-db.ts`) so the auto-create paths can't spawn case-variant dupes. Pure category helpers live in `lib/categories.ts` (client-safe — imported by `PurchaseForm`); anything touching the DB lives in `lib/category-db.ts`.
+
 ---
 
-*You are fully oriented. The app is **complete, live, and verified** (receipt import + v2 done, 103 tests). Remaining work is the optional polish in §5. Follow §1's rules and §8's playbook.*
+*You are fully oriented. The app is **feature-complete pending one live check** (Phase C/D — §5a). A/accuracy/B/hub are shipped & verified; **123 tests**. Follow §1's rules (esp. §1.4 break-it×3 + break-build×2, and use PowerShell not Bash) and §8's playbook.*
