@@ -29,7 +29,7 @@ The hub is a small set of static HTML files served by **GitHub Pages out of the 
 | **Build progress** | `docs/progress.html` | **The primary review surface** — the live board of every phase. Detailed below. |
 | Master doc | `docs/masterdoc.html` | The full "how it all works" reference, kept current. |
 
-All of these share one design system (`docs/shelfie.css` + `docs/theme.js`) so the hub *looks like the app* — reviewing the hub is itself a taste of the product's look and feel.
+All of these share **one design system** — a tokens stylesheet + a theme script (`templates/tokens.css` is the generic starter; Shelfie's were `docs/shelfie.css` + `docs/theme.js`) — so the hub *looks like the app*; reviewing the hub is itself a taste of the product's look and feel.
 
 ---
 
@@ -53,10 +53,10 @@ The board is driven by a `PHASES` array in the page; each entry is one card:
 | `status` | `done` / `active` / `queued` — drives the badge + border color. |
 | `desc` | One plain-English line: what this phase gives the owner. |
 | `note` | The current standing — e.g. "Shipped & verified on the owner's iPhone (123 tests)". |
-| `steps[]` | The workflow checklist for the phase — each `{n: name, s: state}` where state is `done` / `active` / `todo`, rendered as ✓ / ◐ / ◦ chips (Design approved · Break the spec · Plan · Break the plan · Build · Break the build ×2 · Live verify). |
-| `breaks[]` | The adversarial record — a list of `{stage, verdict, items[]}`. `stage` = which gate ("🛡️ Break the SPEC"), `verdict` = the one-line outcome ("2 fixed"), `items` = the plain-English findings. Optional `link` points to the full write-up. |
+| `steps[]` | The workflow checklist for the phase — each `{n: name, s: state}` where state is `done` / `active` / `queued`, rendered as ✓ / ◐ / ◦ chips (Design approved · Break the spec · Plan · Break the plan · Build · Break the build ×2 · Live verify). |
+| `breaks[]` | The adversarial record — a list of `{stage, verdict, items[]}`. `stage` = which gate ("🛡️ Break the SPEC"), `verdict` = the one-line outcome ("2 fixed"), `items` = the plain-English findings. An optional `link` may point to a full write-up (not every board wires it up). |
 
-The page renders all of this from the array — add a phase by appending one object; update a live phase by editing only its own fields. That mechanical rule is what keeps the history honest.
+The page renders all of this from the array — add a phase by appending one object; update a live phase by editing only its own fields. That mechanical rule is what keeps the history honest. A ready-to-copy starter is `templates/progress-board.html` — note it's an intentionally **self-contained** variant (its tokens are inlined and it follows the OS light/dark preference with no separate toggle), so it works on its own before you've wired in the shared `tokens.css`/theme toggle the other hub pages use.
 
 > Recording break-it findings here is **step 3 of "after every pass"** in `03-stress-tests.md`. The stress tests produce the findings; this board is where they live for good.
 
@@ -91,10 +91,10 @@ The exact commands (how to list deployments, how to force one, the Windows secre
 
 ## The design system the hub carries
 
-Every hub page pulls the same two shared files, so the hub is visually one product — and doubles as a **live sample of the app's look**:
+Every hub page pulls the same two shared files, so the hub is visually one product — and doubles as a **live sample of the app's look**. Pick your *own* palette and fonts (this is a pattern to copy, not a mandate); the two files are:
 
-- **`docs/shelfie.css`** — the design tokens: a "fresh market receipt" palette (warm paper, deep charcoal-green, amber, red) as CSS variables, plus the display / body / mono font stack (Fraunces · Hanken Grotesk · Spline Sans Mono) and shared bits (badges, cards, radius, shadows). Light **and** dark values are both defined as variable sets.
-- **`docs/theme.js`** + a tiny inline `<head>` snippet — a **persistent light/dark toggle with no flash of the wrong theme**. The head snippet reads the saved choice (or the OS preference) and stamps `data-theme` on the root element *before the page paints*, so there's no flash; `theme.js` then wires the floating 🌙/☀️ button to flip and remember the choice in `localStorage`.
+- **A tokens stylesheet** (`templates/tokens.css` is the generic starter) — the design tokens as CSS variables: surfaces, text, lines, an accent + the semantic green/amber/red, radius, shadows, and a **display / body / mono** font-role split. Light **and** dark values are both defined as variable sets. *(Shelfie's was a "fresh market receipt" palette — warm paper / charcoal-green — with Fraunces · Hanken Grotesk · Spline Sans Mono; that's the worked example, not a requirement.)*
+- **A theme script** + a tiny inline `<head>` snippet — a **persistent light/dark toggle with no flash of the wrong theme**. The head snippet reads the saved choice (or the OS preference) and stamps `data-theme` on the root element *before the page paints*, so there's no flash; the script then wires the floating 🌙/☀️ button to flip and remember the choice in `localStorage`. (See `templates/hub-index.html` for both wired up.)
 
 Because the hub renders in the app's real tokens and fonts, the owner reviewing the board is also, quietly, reviewing the app's taste. The mockup and full design detail live in `06-mockups-and-illustration.md`.
 

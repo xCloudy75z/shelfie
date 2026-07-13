@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!--
+  hub-index.html — the hub front door (STARTER).
+  A remote owner reviews everything here as real web pages. This links to each
+  reviewable artifact. Served by GitHub Pages from the repo's /docs folder.
+  Uses tokens.css for the shared design system. Replace «placeholders».
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>«Project» — Hub</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <!-- No-flash theme init: set the theme BEFORE first paint so there's no flicker. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    .wrap { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+    .hero h1 { font-size: 40px; margin: 0 0 8px; }
+    .hero p { color: var(--ink-soft); margin: 0 0 28px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .card {
+      display: block; text-decoration: none; color: inherit;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .card .ico { font-size: 26px; }
+    .card h3 { margin: 10px 0 4px; font-size: 18px; }
+    .card p { margin: 0; font-size: 13.5px; color: var(--ink-soft); }
+    .badge {
+      display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px;
+      border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); margin-top: 10px;
+    }
+    .toggle {
+      position: fixed; top: 16px; right: 16px; width: 44px; height: 44px; border-radius: 50%;
+      border: 1px solid var(--line); background: var(--card); color: var(--ink);
+      cursor: pointer; font-size: 18px; box-shadow: var(--shadow-sm);
+    }
+  </style>
+</head>
+<body>
+  <button class="toggle" id="themeToggle" aria-label="Toggle light/dark">🌙</button>
+  <div class="wrap">
+    <div class="hero">
+      <h1>«Project»</h1>
+      <p>«one-line pitch». Everything reviewable, as real web pages.</p>
+    </div>
+    <div class="grid">
+      <a class="card" href="mockup.html"><div class="ico">🎨</div><h3>Mockup</h3><p>Clickable look &amp; flow, fake data.</p><span class="badge">Ready</span></a>
+      <a class="card" href="spec.html"><div class="ico">📐</div><h3>Spec</h3><p>The design in plain English.</p><span class="badge">Ready</span></a>
+      <a class="card" href="review.html"><div class="ico">🛡️</div><h3>Break-it review</h3><p>Adversarial findings.</p><span class="badge">Ready</span></a>
+      <a class="card" href="progress.html"><div class="ico">📊</div><h3>Build progress</h3><p>Live board — auto-refreshes.</p><span class="badge">Live</span></a>
+      <a class="card" href="«live-app-url»"><div class="ico">🚀</div><h3>Live app</h3><p>The real thing.</p><span class="badge">Live</span></a>
+      <a class="card" href="masterdoc.html"><div class="ico">📖</div><h3>Master doc</h3><p>The full reference.</p><span class="badge">Ready</span></a>
+    </div>
+  </div>
+  <script>
+    var btn = document.getElementById('themeToggle');
+    function sync() { btn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
+    sync();
+    btn.addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+      sync();
+    });
+  </script>
+</body>
+</html>

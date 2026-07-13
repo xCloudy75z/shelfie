@@ -2,6 +2,20 @@
 
 The full flow is in `README.md`. This file explains what happens at each stage and how to run it. The gates (break-spec/plan/build) have their own file: `03-stress-tests.md`.
 
+## The "superpowers" skills behind this
+
+This method runs on a reusable library of **"superpowers" skills** — named, packaged procedures you invoke per stage instead of improvising. You don't need that exact library, but the *mapping* is the system: every stage has a named, repeatable procedure, so quality doesn't depend on remembering to be careful.
+
+| Stage | Skill it uses |
+|-------|---------------|
+| Brainstorm → agreed design | `brainstorming` (one question at a time, YAGNI, present + approve) |
+| Write the plan | `writing-plans` (bite-sized, test-first, exact code) |
+| Build each task | `test-driven-development` + `subagent-driven-development` (or `executing-plans` for inline) |
+| Every break-it gate | the skeptic prompts in `03-stress-tests.md` (a.k.a. `requesting-code-review`) |
+| Any bug or surprise | `systematic-debugging` (root cause before fix) |
+| Before claiming "done" | `verification-before-completion` (evidence, not assertion) |
+| Isolated / parallel work | `using-git-worktrees` |
+
 ## ① Brainstorm → an agreed design
 - **One question at a time.** Don't dump ten questions; ask, listen, refine. Prefer multiple-choice — easier to answer, and it works for a remote owner in chat.
 - **YAGNI ruthlessly.** Cut every feature that isn't load-bearing. "Simple" projects need this most — that's where unexamined assumptions waste the most work.
