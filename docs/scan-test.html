@@ -58,6 +58,7 @@
   var startBtn = document.getElementById('startBtn');
   var stopBtn = document.getElementById('stopBtn');
   var html5Qr = null;
+  var done = false; // once a barcode is read, stop (owner request)
   var log = [];
 
   function diag(msg){ log.push(msg); diagEl.textContent = log.join('\n'); }
@@ -97,6 +98,7 @@
 
   startBtn.addEventListener('click', function(){
     resultEl.innerHTML = '';
+    done = false;
     if (typeof Html5Qrcode === 'undefined') { showErr('Scanner library did not load (network/CDN blocked).'); return; }
     diag('starting camera…');
     startBtn.style.display = 'none';
@@ -109,8 +111,14 @@
       { facingMode: 'environment' },
       { fps: 10, qrbox: { width: 260, height: 160 } },
       function(decodedText, decodedResult){
+        if (done) return;                 // lock in on the FIRST clean read, then stop
+        done = true;
         var fmt = decodedResult && decodedResult.result && decodedResult.result.format ? decodedResult.result.format.formatName : '';
         showHit(decodedText, fmt);
+        if (html5Qr) { html5Qr.stop().then(function(){ html5Qr.clear(); diag('stopped after read.'); }).catch(function(){}); }
+        stopBtn.style.display = 'none';
+        startBtn.textContent = 'Scan again';
+        startBtn.style.display = 'block';
       },
       function(){ /* per-frame no-match, ignore */ }
     ).then(function(){
