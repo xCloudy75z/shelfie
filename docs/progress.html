@@ -177,9 +177,9 @@ const PHASES=[
       "A third quick pass confirmed both fixes hold with no regressions. This is exactly why you asked for two build-breaks."]}
   ]},
 
- {id:"phaseCD", title:"Phase C/D · Camera scanning", status:"active",
+ {id:"phaseCD", title:"Phase C/D · Camera scanning", status:"done",
   desc:"One camera scanner, two buttons: on Log, scan → identify the item (or start a new one); on Prices, scan → open that item's price story. Stops on the first read.",
-  note:"✅ Built, double-break-reviewed, and LIVE. Live-verify on the installed iPhone app caught + fixed one layout regression (iOS safe-area — content drew under the status bar / home indicator); owner confirmed the fix. Final 📷 scan sign-off (Log + Prices) pending.",
+  note:"✅ Shipped & fully verified on the owner's iPhone (installed app): scan-to-identify on Log, the new-item teach-loop, scan-to-price-story on Prices, and stop-on-first-read all confirmed. The safe-area layout regression found during verify was fixed too. This closes the A→B→C/D roadmap — the app is feature-complete.",
   steps:[
     {n:"Feasibility spike ✓", s:"done"},
     {n:"Design approved (C11)", s:"done"},
@@ -189,10 +189,11 @@ const PHASES=[
     {n:"Break the plan", s:"done"},
     {n:"Build · 123 tests", s:"done"},
     {n:"Break the build ×2", s:"done"},
-    {n:"Live verify (iPhone)", s:"active"}
+    {n:"Live verify (iPhone)", s:"done"}
   ],
   breaks:[
-    {stage:"📱 Live verify — installed iPhone app", verdict:"1 layout regression caught + fixed", items:[
+    {stage:"📱 Live verify — installed iPhone app", verdict:"shipped · scan steps verified + 1 layout fix", items:[
+      "All scan steps confirmed on the installed iPhone app: scan a tracked item → name prefills; scan a NEW item → save → scan again → now recognised (the teach-loop); Prices scan → price story / start-tracking; camera stops on the first read and the light turns off on close. ‘Perfecto.’",
       "Installed-app only: the full-screen-scanner change (viewport-fit=cover) let the app draw under the iOS status bar + home indicator — the theme toggle collided with the clock/battery and the tab-bar icons were squished. Safari was unaffected, which is why only the installed-app check caught it.",
       "Fixed by padding the app’s top/bottom chrome with iOS safe-area insets (those insets are 0 in Safari, so the browser layout is unchanged). Owner confirmed the installed app now looks right.",
       "Also confirmed the earlier blank-screen was a stale cached version — cleared by reinstalling; the network-first service worker prevents it recurring."]},
