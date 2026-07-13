@@ -150,9 +150,9 @@ const PHASES=[
       "3 minor edges verified acceptable; the discount math, safe deletes, and category tools all confirmed correct on the real code."]}
   ]},
 
- {id:"phaseB", title:"Phase B · Merge tool", status:"active",
+ {id:"phaseB", title:"Phase B · Merge tool", status:"done",
   desc:"Fold two items into one on the Prices view — you choose which name to keep; the other item's purchases &amp; barcodes move over, then it's removed. One-tap undo.",
-  note:"In design — spec written, break-it passes next. Now with TWO break-the-build passes before your live check.",
+  note:"Shipped &amp; verified on the owner's iPhone (123 tests). Built with TWO independent break-the-build passes — the 2nd caught bugs the 1st missed.",
   steps:[
     {n:"Design approved", s:"done"},
     {n:"Spec + published", s:"done"},
@@ -161,7 +161,7 @@ const PHASES=[
     {n:"Break the plan", s:"done"},
     {n:"Build · 123 tests", s:"done"},
     {n:"Break the build ×2", s:"done"},
-    {n:"Live verify (iPhone)", s:"active"}
+    {n:"Live verify (iPhone) ✓", s:"done"}
   ],
   breaks:[
     {stage:"🛡️ Break the SPEC", verdict:"forward merge sound · 2 Major undo fixes", items:[
