@@ -6,6 +6,7 @@ import ShelfCheck from "@/app/components/ShelfCheck";
 import PriceItemPicker from "@/app/components/PriceItemPicker";
 import BarcodeLine from "@/app/components/BarcodeLine";
 import ItemCategoryPicker from "@/app/components/ItemCategoryPicker";
+import ItemMergeControl from "@/app/components/ItemMergeControl";
 
 // Reads are per-request against the DB — never at build time.
 export const dynamic = "force-dynamic";
@@ -117,6 +118,13 @@ export default async function PricesPage({
           itemId={selected.id}
           categoryId={selected.categoryId}
           categories={categories}
+        />
+      )}
+
+      {selected && (
+        <ItemMergeControl
+          currentItem={{ id: selected.id, name: selected.name }}
+          otherItems={items.filter((i) => i.id !== selected.id)}
         />
       )}
 
