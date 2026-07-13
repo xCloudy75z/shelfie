@@ -129,6 +129,12 @@ export default function PurchaseEditModal({
   // before discarding (so an accidental outside tap can't wipe them silently).
   function attemptClose() {
     if (pending) return;
+    // If the delete-confirm is showing, an outside tap / ✕ / Escape just backs
+    // out of it (never surprises the user with a discard prompt underneath).
+    if (confirmDelete) {
+      setConfirmDelete(false);
+      return;
+    }
     if (dirty) {
       setConfirmDiscard(true);
       return;
