@@ -53,6 +53,13 @@ Update the hub progress board (`docs/progress.html`) and the docs **continuously
 ### 1.9 Destructive actions confirm first
 Destructive DB operations (wipe / reset / drop) **always confirm first**, and are built confirmation-gated in the UI (the app has a "Start fresh" reset that keeps the PIN). Deleting files: show the full list → get explicit approval → confirm done.
 
+### 1.10 Devices & testing (owner setup — locked 2026-07-13)
+The owner works across **4 devices**: **① Local PC** (dev machine — git/build/deploy), **② iPhone = "Remote 1"** (his own phone; the **actual keeper / device of record**; currently at home — phones barred in college), **③ College PC = "Remote 2"**, **④ College phone (Android) = "Remote 3"** (loaner — **all live testing happens here now**).
+- **Live-verify on the Android (Remote 3)** by default — "check it on your phone" = Android/Chrome (install via Chrome ⋮ → "Add to Home screen").
+- **Trigger phrase "iPhone Update":** when the owner says it, share ALL steps to do on the **iPhone (Remote 1)** — iOS Safari install/update (Share → Add to Home Screen), tap **Update** on Month → App version, verify. That's when the iPhone syncs to the latest app.
+- **Never suggest exporting a backup from the Android** — the owner won't (data is server-side, so a device switch needs no backup).
+- **Key nuance:** Shelfie is single-user + server-backed (one Neon DB, one PIN) → **all devices share the SAME data**. Android testing writes to the data the iPhone keeps; there is no isolation, so avoid the "Start fresh" reset / bulk deletes on the Android unless a real wipe is intended.
+
 ---
 
 ## 2. Tech stack & architecture (what you're working in)
