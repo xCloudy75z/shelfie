@@ -3,6 +3,8 @@
 import { useRef, useState, useTransition, type CSSProperties } from "react";
 import { addPurchase, type AddPurchaseResult } from "@/app/actions/purchases";
 import { parsePriceFils } from "@/lib/money";
+import BarcodeScanner from "@/app/components/BarcodeScanner";
+import { lookupBarcode } from "@/app/actions/scan";
 
 const STORES = ["Carrefour", "Lulu", "Union Coop", "Other"];
 
@@ -52,18 +54,21 @@ const s = {
 type Props = {
   items: string[];
   categories: string[];
+  initialBarcode?: string;
 };
 
 type Confirm = { id: string; name: string };
 
-export default function PurchaseForm({ items, categories }: Props) {
+export default function PurchaseForm({ items, categories, initialBarcode }: Props) {
   const [itemName, setItemName] = useState("");
   const [priceAed, setPriceAed] = useState("");
   const [qty, setQty] = useState("1");
   const [store, setStore] = useState("Carrefour");
   const [category, setCategory] = useState("");
-  const [barcode, setBarcode] = useState("");
+  const [barcode, setBarcode] = useState(initialBarcode ?? "");
   const [onOffer, setOnOffer] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [barcodeFromScan, setBarcodeFromScan] = useState(false);
 
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -96,6 +101,7 @@ export default function PurchaseForm({ items, categories }: Props) {
 
   function pickSuggestion(name: string) {
     setItemName(name);
+    clearScannedBarcode();
     setShowSug(false);
     setActiveIdx(-1);
   }
@@ -132,6 +138,26 @@ export default function PurchaseForm({ items, categories }: Props) {
   function flash(msg: string) {
     setToast(msg);
     window.setTimeout(() => setToast(null), 3000);
+  }
+
+  function onScan(code: string) {
+    setShowScanner(false);
+    setBarcode(code);
+    setBarcodeFromScan(true);
+    lookupBarcode(code)
+      .then((hit) => {
+        if (hit) { setItemName(hit.itemName); flash(`Recognized: ${hit.itemName}`); }
+        else flash("New item — add its details");
+      })
+      .catch(() => {});
+  }
+
+  function clearScannedBarcode() {
+    if (barcodeFromScan) {
+      setBarcode("");
+      setBarcodeFromScan(false);
+      flash("barcode cleared — logging as typed");
+    }
   }
 
   // One entry point for all three paths (first save, "yes same", "no new").
@@ -211,6 +237,7 @@ export default function PurchaseForm({ items, categories }: Props) {
             value={itemName}
             onChange={(e) => {
               setItemName(e.target.value);
+              clearScannedBarcode();
               setShowSug(true);
               setActiveIdx(-1);
             }}
@@ -362,6 +389,16 @@ export default function PurchaseForm({ items, categories }: Props) {
           spellCheck={false}
           style={s.field}
         />
+        <button
+          type="button"
+          onClick={() => setShowScanner(true)}
+          style={{ ...s.field, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700 }}
+        >
+          📷 Scan barcode
+        </button>
+        {showScanner && (
+          <BarcodeScanner onDetected={onScan} onClose={() => setShowScanner(false)} />
+        )}
 
         <div style={s.toggleWrap}>
           <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>
