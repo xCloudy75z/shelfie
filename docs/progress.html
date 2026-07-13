@@ -185,13 +185,16 @@ const PHASES=[
     {n:"Design approved (C11)", s:"done"},
     {n:"Spec + published", s:"done"},
     {n:"Break the spec", s:"done"},
-    {n:"Plan (TDD)", s:"active"},
-    {n:"Break the plan", s:"todo"},
-    {n:"Build", s:"todo"},
+    {n:"Plan (TDD)", s:"done"},
+    {n:"Break the plan", s:"done"},
+    {n:"Build", s:"active"},
     {n:"Break the build ×2", s:"todo"},
     {n:"Live verify (iPhone)", s:"todo"}
   ],
   breaks:[
+    {stage:"🛡️ Break the PLAN", verdict:"correct to execute · 2 minor folded in", items:[
+      "Independent review checked every step against the real code (the scanner-library trick, the html5-qrcode calls, the page wiring, types) — all correct.",
+      "2 small gaps closed before coding: the scan button now shows even on a brand-new empty account; and picking a typeahead suggestion also clears a scanned barcode."]},
     {stage:"🛡️ Break the SPEC", verdict:"sound · 4 Major + 4 minor folded in", items:[
       "Major: the ‘scan an unknown item at the shelf → start tracking’ link wasn’t actually carrying the barcode into the log form — now it is.",
       "Major: a scanned barcode could silently override a name you edited (mis-filing) — editing the name now clears the scanned barcode.",

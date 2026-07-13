@@ -234,17 +234,19 @@ const privacy: CSSProperties = { color: "rgba(255,255,255,.7)", fontSize: 12, ma
   }
 ```
 
-- [ ] **Step 3: PurchaseForm — clear a scanned barcode when the name is edited** — in the item `<input>`'s `onChange`, after `setItemName(e.target.value);`, add:
+- [ ] **Step 3: PurchaseForm — clear a scanned barcode when the name is changed** — define a tiny helper and call it from BOTH the item `<input>` onChange AND `pickSuggestion` (break-plan Minor #2 — a typeahead pick otherwise leaves a stale scanned barcode that would mis-file):
 
 ```tsx
-              if (barcodeFromScan) {
-                setBarcode("");
-                setBarcodeFromScan(false);
-                flash("barcode cleared — logging as typed");
-              }
+  function clearScannedBarcode() {
+    if (barcodeFromScan) {
+      setBarcode("");
+      setBarcodeFromScan(false);
+      flash("barcode cleared — logging as typed");
+    }
+  }
 ```
 
-(Fires once — `barcodeFromScan` is false afterwards.)
+In the item `<input>`'s `onChange`, after `setItemName(e.target.value);`, add `clearScannedBarcode();`. In `pickSuggestion(name)`, after `setItemName(name);`, add `clearScannedBarcode();`. (Fires once — `barcodeFromScan` is false afterwards.)
 
 - [ ] **Step 4: PurchaseForm — the Scan button + overlay** — next to the Barcode field label/input, add a button, and render the scanner:
 
@@ -351,11 +353,7 @@ const card: CSSProperties = {
 const link: CSSProperties = { color: "var(--green-strong)", fontWeight: 700, textDecoration: "none" };
 ```
 
-- [ ] **Step 2: Render on Prices** — in `app/(app)/prices/page.tsx`, import it (`import PriceScanButton from "@/app/components/PriceScanButton";`) and render it right under `<PriceItemPicker … />` (shows regardless of whether an item is selected):
-
-```tsx
-      <PriceScanButton />
-```
+- [ ] **Step 2: Render on Prices — in BOTH branches** — in `app/(app)/prices/page.tsx`, import it (`import PriceScanButton from "@/app/components/PriceScanButton";`). Render `<PriceScanButton />` right under `<PriceItemPicker … />` in the main return, **AND** also inside the early `items.length === 0` empty-state branch (break-plan Minor #1 — a brand-new account with no items is exactly the "scan something I've never tracked → start tracking" case; without this the scan button is hidden there). In the empty state, place `<PriceScanButton />` after the "Nothing logged yet" card.
 
 - [ ] **Step 3: Typecheck + build** — clean.
 - [ ] **Step 4: Commit** — msg `feat(phase-cd): scan on Prices — open the item's price story`.
