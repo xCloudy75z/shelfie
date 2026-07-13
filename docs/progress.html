@@ -187,11 +187,16 @@ const PHASES=[
     {n:"Break the spec", s:"done"},
     {n:"Plan (TDD)", s:"done"},
     {n:"Break the plan", s:"done"},
-    {n:"Build", s:"active"},
-    {n:"Break the build ×2", s:"todo"},
-    {n:"Live verify (iPhone)", s:"todo"}
+    {n:"Build · 123 tests", s:"done"},
+    {n:"Break the build ×2", s:"done"},
+    {n:"Live verify (iPhone)", s:"active"}
   ],
   breaks:[
+    {stage:"🛡️ Break the BUILD ×2 (two independent skeptics)", verdict:"2 blockers + UX hardening — fixed", items:[
+      "Both passes caught it: scanning a NEW product on Log silently dropped the barcode (so ‘scan → next time it’s recognised’ never got set up) — fixed.",
+      "Both passes caught it: the camera could stay on if you cancelled while it was starting up — fixed (no lingering light).",
+      "Pass 2 added real iPhone polish: a ‘Starting camera…’ message instead of a black box; the full-screen overlay now always covers the screen; clearer ‘allow camera in Settings’ message; background locked while scanning.",
+      "Confirmed safe: the scanner library stays out of the main app; barcodes match what’s stored; no data loss."]},
     {stage:"🛡️ Break the PLAN", verdict:"correct to execute · 2 minor folded in", items:[
       "Independent review checked every step against the real code (the scanner-library trick, the html5-qrcode calls, the page wiring, types) — all correct.",
       "2 small gaps closed before coding: the scan button now shows even on a brand-new empty account; and picking a typeahead suggestion also clears a scanned barcode."]},

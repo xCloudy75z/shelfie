@@ -73,6 +73,13 @@ The camera feed is processed **entirely on-device** (the JS decoder runs in the 
 5. Scanner **stops on the first read** (no repeated fires); "Scan again"/cancel work; camera light turns off on close.
 6. Deny camera permission → friendly message, no crash. **Confirm it works in the installed Home-Screen app**, not just Safari.
 
+## 9b. Break-build passes ×2 — resolved (2026-07-13)
+Two independent skeptic passes; both flagged the same 2 blockers, pass 2 added iPhone-UX hardening. All fixed:
+- **Blocker — new-item scan dropped the barcode:** `onScan` armed the clear-on-name-edit guard even for an unknown code, so typing the required name wiped it → new item saved with no barcode (teach-loop dead). Fixed: arm the guard only for a RECOGNIZED barcode; a new-item scan keeps its barcode.
+- **Blocker — camera orphaned on cancel-during-startup:** teardown nulled the ref before `start()` resolved. Fixed: always stop the CAPTURED instance, never the ref.
+- **UX:** "Starting camera…" state (was a black box); `createPortal` to `document.body` so the page's `.rise` transform can't box the fixed overlay; robust iOS permission/error detection (`e.name`+message; chunk-load / no-camera / permission); Prices lookup wrapped in try/catch; deep-linked barcode shown un-padded via `displayBarcode`; dialog role/aria-modal, focus the Cancel button, background scroll locked while open.
+- **Confirmed sound:** html5-qrcode stays an async chunk (First-Load unchanged); canonical match; GTIN-only formats; no data loss; recognized-barcode mis-file guard.
+
 ## 9a. Break-spec pass — resolved (2026-07-13)
 - **#1 (Major):** Prices→Log barcode hand-off now REQUIRED wiring — `/log?barcode=` → `canonicalizeBarcode` → `initialBarcode` prop → prefilled field (§5, §6).
 - **#2 (Major):** editing the item name after a scan clears the scanned barcode, so a stale barcode can't silently mis-file the purchase under its owner (§5).
