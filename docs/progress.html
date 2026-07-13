@@ -177,15 +177,21 @@ const PHASES=[
       "A third quick pass confirmed both fixes hold with no regressions. This is exactly why you asked for two build-breaks."]}
   ]},
 
- {id:"phaseC", title:"Phase C · Camera scanning", status:"queued",
-  desc:"Scan a barcode with the phone camera instead of typing. Feasibility-gated: prove the camera works before adding the scanner library.",
-  note:"✅ Feasibility spike PASSED — the owner's iPhone read a real EAN-13 barcode via the camera (2026-07-13). Awaiting the go-ahead to add the scanner to the real app, then build.",
-  steps:[], breaks:[]},
-
- {id:"phaseD", title:"Phase D · Scan → price story", status:"queued",
-  desc:"In-store: scan an item → the app opens its price history &amp; good-price verdict instantly. Shares one scanner with Phase C (two destinations).",
-  note:"Queued · builds on Phase C's scanner.",
-  steps:[], breaks:[]}
+ {id:"phaseCD", title:"Phase C/D · Camera scanning", status:"active",
+  desc:"One camera scanner, two buttons: on Log, scan → identify the item (or start a new one); on Prices, scan → open that item's price story. Stops on the first read.",
+  note:"✅ Feasibility spike PASSED on the owner's iPhone (real EAN-13 read, 2026-07-13). Owner said build it (C11). In design — spec written, break-it passes next.",
+  steps:[
+    {n:"Feasibility spike ✓", s:"done"},
+    {n:"Design approved (C11)", s:"done"},
+    {n:"Spec + published", s:"done"},
+    {n:"Break the spec", s:"active"},
+    {n:"Plan (TDD)", s:"todo"},
+    {n:"Break the plan", s:"todo"},
+    {n:"Build", s:"todo"},
+    {n:"Break the build ×2", s:"todo"},
+    {n:"Live verify (iPhone)", s:"todo"}
+  ],
+  breaks:[]}
 ];
 
 const label={done:"Shipped",active:"In progress",queued:"Queued"};
