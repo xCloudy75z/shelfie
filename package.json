@@ -19,6 +19,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "html5-qrcode": "^2.3.8",
     "jose": "^6.2.3",
     "next": "15.5.20",
     "pdfjs-dist": "^6.1.200",
