@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Live board: auto-refreshes so a remote owner always sees the latest. -->
+<meta http-equiv="refresh" content="60" />
+<title>«Project» — Build Progress</title>
+<style>
+  /* ---- design tokens (self-contained: no external CSS/JS/fonts) ---- */
+  :root{
+    --paper:#f4f1e8; --card:#fffdf7;
+    --ink:#181a15; --ink-soft:#5b5e52; --ink-faint:#8b8d80;
+    --line:#e4ddcc; --line-soft:#efe9db;
+    --green:#1f9d57; --green-strong:#146b3c; --green-soft:#e3f3e7;
+    --amber:#d9852a; --amber-soft:#f7ead0;
+    --radius:16px;
+    --shadow-sm:0 2px 6px rgba(30,42,20,.06);
+    color-scheme:light;
+  }
+  /* Dark theme follows the OS preference — no toggle, no JS dependency. */
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0d120e; --card:#151b15;
+      --ink:#eaf0e4; --ink-soft:#9daa9b; --ink-faint:#6d7a6c;
+      --line:#263024; --line-soft:#1e271d;
+      --green:#42d888; --green-strong:#82ecb0; --green-soft:#16301f;
+      --amber:#f1b24e; --amber-soft:#2b2412;
+      --shadow-sm:0 2px 8px rgba(0,0,0,.4);
+      color-scheme:dark;
+    }
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--ink);background:var(--paper);line-height:1.6}
+  .wrap{max-width:740px;margin:0 auto;padding:52px 20px 90px}
+  h1{font-size:clamp(30px,6vw,44px);margin:6px 0 4px;letter-spacing:-.015em}
+  .sub{color:var(--ink-soft);font-size:16px;margin:0 0 8px;max-width:64ch}
+  .live{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--green-strong)}
+  .live i{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .tally{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 26px}
+  .tally span{font-size:13px;font-weight:700;border-radius:999px;padding:6px 13px;border:1px solid var(--line)}
+  .tally .s-done{background:var(--green-soft);color:var(--green-strong)}
+  .tally .s-active{background:var(--amber-soft);color:var(--amber)}
+  .tally .s-queued{background:var(--line-soft);color:var(--ink-faint)}
+
+  /* one permanent card per phase — fixed order, never overwritten */
+  .phase{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 20px;margin:0 0 16px;box-shadow:var(--shadow-sm);border-left:5px solid var(--line)}
+  .phase.done{border-left-color:var(--green)}
+  .phase.active{border-left-color:var(--amber)}
+  .phase.queued{opacity:.82}
+  .phase .head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .phase h2{font-size:20px;margin:0;letter-spacing:-.01em}
+  .phase .desc{color:var(--ink-soft);font-size:14px;margin:8px 0 0}
+  .phase .note{color:var(--ink-faint);font-size:12.5px;margin:8px 0 0;font-style:italic}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+    padding:4px 11px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
+  .badge-done{background:var(--green-soft);color:var(--green-strong)}
+  .badge-active{background:var(--amber-soft);color:var(--amber)}
+  .badge-queued{background:var(--line-soft);color:var(--ink-faint)}
+  .badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  .steps{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0}
+  .step{font-size:11.5px;font-weight:600;border-radius:8px;padding:5px 9px;
+    display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line)}
+  .step.done{background:var(--green-soft);color:var(--green-strong)}
+  .step.active{background:var(--amber-soft);color:var(--amber)}
+  .step.todo{background:var(--line-soft);color:var(--ink-faint)}
+
+  details.breaks{margin:14px 0 0;border-top:1px dashed var(--line);padding-top:12px}
+  details.breaks>summary{cursor:pointer;font-size:13px;font-weight:800;color:var(--ink);list-style:none}
+  details.breaks>summary::-webkit-details-marker{display:none}
+  details.breaks>summary::before{content:"\25B8  ";color:var(--ink-faint)}
+  details.breaks[open]>summary::before{content:"\25BE  "}
+  .bstage{margin:12px 0 0}
+  .bstage .bt{font-size:12.5px;font-weight:800;color:var(--ink)}
+  .bstage .bv{font-size:11px;font-weight:700;color:var(--green-strong);background:var(--green-soft);
+    border-radius:999px;padding:2px 8px;margin-left:6px}
+  .bstage ul{margin:6px 0 0;padding-left:18px}
+  .bstage li{font-size:12.5px;color:var(--ink-soft);margin:3px 0}
+  .foot{margin-top:34px;color:var(--ink-faint);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>«Project» — Build Progress</h1>
+    <p class="sub">Every phase keeps its <b>own permanent card</b>, in order — nothing is overwritten.
+      Each card preserves the workflow steps and <b>what the &ldquo;break-it&rdquo; passes caught</b>,
+      so you can look back at any phase anytime.
+      <span class="live"><i></i>live · auto-refreshes every 60s</span></p>
+    <div class="tally" id="tally"></div>
+    <div id="phases"></div>
+    <p class="foot">Live app → <a href="«https://your-app-url»">«your-app-url»</a><br>
+      Built test-first by fresh agents; every phase is attacked at spec, plan &amp; build, then verified on the real app.</p>
+  </div>
+
+<script>
+/* ============================================================================
+   APPEND-ONLY. This array IS the board.
+   - Add each new phase to the END of PHASES, in the order it happened.
+   - NEVER reorder, rename an id, or overwrite a shipped phase's card.
+   - To update a phase in place, edit ONLY that phase's own fields (e.g. flip a
+     step to "done", append a new break-it stage) — never rewrite its history.
+   - PRESERVE every break-it finding forever: the `breaks` list is the owner's
+     review trail. A finding, once recorded, is never deleted.
+
+   Card shape:
+   {
+     id:     "unique-slug",           // never changes once added
+     title:  "Phase name",
+     status: "done" | "active" | "queued",
+     desc:   "one-line plain-English what-it-does",
+     note:   "shipped/verified note, test count, etc. (optional)",
+     steps:  [ {n:"Step label", s:"done"|"active"|"todo"}, ... ],
+     breaks: [ {stage:"🛡️ Break the SPEC", verdict:"short verdict",
+                items:["finding 1","finding 2", ...]}, ... ]
+   }
+   ========================================================================== */
+const PHASES=[
+
+ // ── Example 1: a SHIPPED phase, with its break-it findings preserved ──────
+ {id:"phase1", title:"Phase 1 · «Core feature»", status:"done",
+  desc:"«One plain-English line: what this phase shipped and why it matters.»",
+  note:"✅ Shipped &amp; verified on «the real device» · «N» tests · built test-first.",
+  steps:[
+    {n:"Design approved", s:"done"},
+    {n:"Spec + break-spec", s:"done"},
+    {n:"Plan (TDD)", s:"done"},
+    {n:"Break the plan", s:"done"},
+    {n:"Build · «N» tests", s:"done"},
+    {n:"Break the build ×2", s:"done"},
+    {n:"Live verify ✓", s:"done"}
+  ],
+  breaks:[
+    {stage:"🛡️ Break the SPEC", verdict:"«N findings folded in»", items:[
+      "«Blocker: the concrete design hole the skeptic found, in plain English → how it was fixed.»",
+      "«Major: another one.»"]},
+    {stage:"🛡️ Break the PLAN", verdict:"«ready to execute»", items:[
+      "«Ordering / fixture / signature fix caught before any code.»"]},
+    {stage:"🛡️ Break the BUILD ×2 (two independent skeptics)", verdict:"«pass 2 caught what pass 1 missed · fixed»", items:[
+      "«Pass 1 (correctness): SHIP — no data bugs.»",
+      "«Pass 2 (real-use on device): caught «the device/UX bug pass 1 structurally couldn't see» — fixed + re-verified.»"]}
+  ]},
+
+ // ── Example 2: the ACTIVE phase (in progress) ─────────────────────────────
+ {id:"phase2", title:"Phase 2 · «Next feature»", status:"active",
+  desc:"«One plain-English line describing the feature being built now.»",
+  note:"In progress — «where it stands right now».",
+  steps:[
+    {n:"Design approved", s:"done"},
+    {n:"Spec + break-spec", s:"done"},
+    {n:"Plan (TDD)", s:"active"},
+    {n:"Break the plan", s:"todo"},
+    {n:"Build", s:"todo"},
+    {n:"Break the build ×2", s:"todo"},
+    {n:"Live verify", s:"todo"}
+  ],
+  breaks:[
+    {stage:"🛡️ Break the SPEC", verdict:"«findings folded in»", items:[
+      "«What the spec skeptic caught so far.»"]}
+  ]}
+
+ // ── Add the next phase here, at the END. Never above an existing one. ──────
+];
+
+const counts={done:0,active:0,queued:0};
+PHASES.forEach(p=>counts[p.status]++);
+document.getElementById("tally").innerHTML=
+  `<span class="s-done">✓ ${counts.done} shipped</span>`+
+  `<span class="s-active">◐ ${counts.active} in progress</span>`+
+  `<span class="s-queued">◦ ${counts.queued} queued</span>`;
+
+const badgeLabel={done:"Shipped",active:"In progress",queued:"Queued"};
+document.getElementById("phases").innerHTML=PHASES.map(p=>{
+  const badge=`<span class="badge badge-${p.status}"><span class="badge-dot"></span>${badgeLabel[p.status]}</span>`;
+  const steps=p.steps&&p.steps.length
+    ? `<div class="steps">${p.steps.map(s=>`<span class="step ${s.s}">${s.s==="done"?"✓":s.s==="active"?"◐":"◦"} ${s.n}</span>`).join("")}</div>` : "";
+  const breaks=p.breaks&&p.breaks.length
+    ? `<details class="breaks"><summary>🛡️ What the break-it passes caught (${p.breaks.length})</summary>${
+        p.breaks.map(b=>`<div class="bstage"><span class="bt">${b.stage}</span><span class="bv">${b.verdict}</span>`+
+          `<ul>${b.items.map(it=>`<li>${it}</li>`).join("")}</ul></div>`).join("")
+      }</details>` : "";
+  return `<div class="phase ${p.status}">
+    <div class="head">${badge}<h2>${p.title}</h2></div>
+    <p class="desc">${p.desc}</p>
+    ${p.note?`<p class="note">${p.note}</p>`:""}
+    ${steps}
+    ${breaks}
+  </div>`;
+}).join("");
+</script>
+</body>
+</html>
