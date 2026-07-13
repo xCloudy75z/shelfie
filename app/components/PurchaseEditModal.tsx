@@ -136,6 +136,8 @@ export default function PurchaseEditModal({
       return;
     }
     if (dirty) {
+      // Dismiss the keyboard so the centered discard pop-up is fully visible.
+      (document.activeElement as HTMLElement | null)?.blur?.();
       setConfirmDiscard(true);
       return;
     }
@@ -294,18 +296,6 @@ export default function PurchaseEditModal({
                 </button>
               </div>
             </div>
-          ) : confirmDiscard ? (
-            <div style={{ width: "100%" }}>
-              <p style={{ margin: "0 0 12px", fontSize: 14, color: "var(--ink)" }}>Discard your changes?</p>
-              <div style={s.row}>
-                <button type="button" onClick={() => setConfirmDiscard(false)} style={{ flex: 1, border: 0, borderRadius: 14, padding: 13, fontSize: 15, fontWeight: 700, background: "var(--green)", color: "#fff", cursor: "pointer" }}>
-                  Keep editing
-                </button>
-                <button type="button" onClick={onClose} style={{ flex: 1, border: "1px solid var(--line)", borderRadius: 14, padding: 13, fontSize: 15, fontWeight: 700, background: "var(--card)", color: "var(--red)", cursor: "pointer" }}>
-                  Discard
-                </button>
-              </div>
-            </div>
           ) : (
             <div style={{ ...s.row, width: "100%" }}>
               <button type="button" disabled={pending} onClick={save} style={{ flex: 1, border: 0, borderRadius: 14, padding: 13, fontSize: 15, fontWeight: 700, background: "var(--green)", color: "#fff", cursor: "pointer", opacity: pending ? 0.6 : 1 }}>
@@ -318,6 +308,28 @@ export default function PurchaseEditModal({
           )}
         </div>
       </div>
+
+      {confirmDiscard && (
+        <div
+          style={discardOverlay}
+          role="presentation"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={discardCard} role="alertdialog" aria-modal="true" aria-label="Discard your changes?">
+            <p style={discardTitle}>Discard your changes?</p>
+            <p style={discardSub}>Your edits to this purchase won’t be saved.</p>
+            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+              <button type="button" onClick={() => setConfirmDiscard(false)} style={keepBtn}>
+                Keep editing
+              </button>
+              <button type="button" onClick={onClose} style={discardBtn}>
+                Discard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
   );
@@ -385,5 +397,62 @@ const xBtn: CSSProperties = {
   height: 44,
   borderRadius: 12,
   fontSize: 16,
+  cursor: "pointer",
+};
+// Centered discard confirmation — a real pop-up over the edit card (covers the
+// whole modal area so it reads as a distinct prompt, not a footer line).
+const discardOverlay: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  zIndex: 1,
+  background: "rgba(6,10,7,0.6)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 24,
+};
+const discardCard: CSSProperties = {
+  width: "100%",
+  maxWidth: 320,
+  background: "var(--card)",
+  border: "1px solid var(--line)",
+  borderRadius: "var(--radius)",
+  boxShadow: "var(--shadow), 0 0 0 1px rgba(255,255,255,0.06)",
+  padding: 22,
+  textAlign: "center",
+};
+const discardTitle: CSSProperties = {
+  margin: 0,
+  fontFamily: "var(--font-display)",
+  fontSize: 19,
+  fontWeight: 600,
+  color: "var(--ink)",
+};
+const discardSub: CSSProperties = {
+  margin: "8px 0 0",
+  fontSize: 13.5,
+  color: "var(--ink-soft)",
+  lineHeight: 1.5,
+};
+const keepBtn: CSSProperties = {
+  flex: 1,
+  border: 0,
+  borderRadius: 14,
+  padding: 13,
+  fontSize: 15,
+  fontWeight: 700,
+  background: "var(--green)",
+  color: "#fff",
+  cursor: "pointer",
+};
+const discardBtn: CSSProperties = {
+  flex: 1,
+  border: "1px solid var(--line)",
+  borderRadius: 14,
+  padding: 13,
+  fontSize: 15,
+  fontWeight: 700,
+  background: "var(--card)",
+  color: "var(--red)",
   cursor: "pointer",
 };
