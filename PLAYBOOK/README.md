@@ -4,6 +4,8 @@
 
 This folder is meant to be **copied into a project** (or kept as a reference beside it). Read `README.md` first, then the numbered files in order. The `templates/` folder holds copy-paste starters.
 
+**Canonical source:** the master of this kit lives in the private repo **`github.com/xCloudy75z/the-playbook`** — adopt / audit / rebuild / sync a project via that repo's `ADOPT.md`, and pull method updates from there.
+
 ---
 
 ## The one-paragraph philosophy
