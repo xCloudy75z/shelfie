@@ -2,7 +2,7 @@ import PurchaseForm from "@/app/components/PurchaseForm";
 import ReceiptImport from "@/app/components/ReceiptImport";
 import { db } from "@/lib/db";
 import { formatAed } from "@/lib/money";
-import { canonicalizeBarcode } from "@/lib/barcode";
+import { canonicalizeBarcode, displayBarcode } from "@/lib/barcode";
 
 // Keep this route out of the static build so `next build` never touches the DB.
 export const dynamic = "force-dynamic";
@@ -16,7 +16,10 @@ export default async function LogPage({
   searchParams: Promise<{ barcode?: string }>;
 }) {
   const { barcode } = await searchParams;
-  const initialBarcode = canonicalizeBarcode(barcode ?? null) ?? "";
+  // Show the human/printed form in the field (not the zero-padded canonical);
+  // addPurchase re-canonicalizes on save, so this round-trips correctly.
+  const canon = canonicalizeBarcode(barcode ?? null);
+  const initialBarcode = canon ? displayBarcode(canon) : "";
   // Existing item names feed the autocomplete; categories feed the picker.
   const [items, categories, recent] = await Promise.all([
     db.item.findMany({ select: { name: true }, orderBy: { name: "asc" } }),

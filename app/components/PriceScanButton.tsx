@@ -16,9 +16,15 @@ export default function PriceScanButton() {
     setOpen(false);
     setNotFound(null);
     startTransition(async () => {
-      const hit = await lookupBarcode(code);
-      if (hit) router.push(`/prices?item=${hit.itemId}`);
-      else setNotFound(code);
+      try {
+        const hit = await lookupBarcode(code);
+        if (hit) router.push(`/prices?item=${hit.itemId}`);
+        else setNotFound(code);
+      } catch {
+        // Lookup failed (rare) — fall back to the "start tracking" card rather
+        // than a silent dead-end.
+        setNotFound(code);
+      }
     });
   }
 

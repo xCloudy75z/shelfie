@@ -143,11 +143,21 @@ export default function PurchaseForm({ items, categories, initialBarcode }: Prop
   function onScan(code: string) {
     setShowScanner(false);
     setBarcode(code);
-    setBarcodeFromScan(true);
+    // Only ARM the "clear the barcode if the name is edited" guard for a
+    // RECOGNIZED barcode (where we auto-fill the owner's name) — editing that
+    // name away must not silently file under the wrong item. For an UNKNOWN
+    // barcode (a new product) leave it disarmed, so typing the required name
+    // KEEPS the scanned barcode and the new item gets it (break-build fix).
+    setBarcodeFromScan(false);
     lookupBarcode(code)
       .then((hit) => {
-        if (hit) { setItemName(hit.itemName); flash(`Recognized: ${hit.itemName}`); }
-        else flash("New item — add its details");
+        if (hit) {
+          setItemName(hit.itemName);
+          setBarcodeFromScan(true);
+          flash(`Recognized: ${hit.itemName}`);
+        } else {
+          flash("Scanned — new item, add its name & price");
+        }
       })
       .catch(() => {});
   }

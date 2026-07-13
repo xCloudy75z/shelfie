@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { canonicalizeBarcode } from "@/lib/barcode";
 
 // Type-only reference to the lazily-imported class (no runtime/bundle impact).
 type Html5QrcodeInstance = InstanceType<
   Awaited<typeof import("html5-qrcode")>["Html5Qrcode"]
 >;
+
+// Stop + release a scanner instance. Never throws (stop() rejects if not
+// scanning, clear() if not stopped — both swallowed). Always operate on a
+// CAPTURED instance, never a ref that another path may have nulled.
+async function stopInstance(inst: Html5QrcodeInstance | null): Promise<void> {
+  if (!inst) return;
+  try { await inst.stop(); } catch { /* not scanning */ }
+  try { inst.clear(); } catch { /* already cleared */ }
+}
 
 export default function BarcodeScanner({
   onDetected,
@@ -17,19 +27,26 @@ export default function BarcodeScanner({
 }) {
   const instRef = useRef<Html5QrcodeInstance | null>(null);
   const doneRef = useRef(false);
+  const cancelBtnRef = useRef<HTMLButtonElement | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [note, setNote] = useState("Point the camera at a barcode");
+  const [note, setNote] = useState("Starting camera…");
 
   useEffect(() => {
     let cancelled = false;
+    // Lock the background from scrolling while the full-screen scanner is open.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    cancelBtnRef.current?.focus();
+
     (async () => {
+      let inst: Html5QrcodeInstance | null = null;
       try {
         // Dynamic import — destructure BOTH the class AND the format enum so
         // nothing from html5-qrcode is statically imported (keeps it out of SSR
         // and the initial bundle).
         const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
         if (cancelled) return;
-        const inst = new Html5Qrcode("reader", {
+        inst = new Html5Qrcode("reader", {
           formatsToSupport: [
             Html5QrcodeSupportedFormats.EAN_13,
             Html5QrcodeSupportedFormats.EAN_8,
@@ -49,49 +66,62 @@ export default function BarcodeScanner({
               return;
             }
             doneRef.current = true;
-            void teardown();
+            instRef.current = null;
+            void stopInstance(inst); // stop the CAPTURED instance
             onDetected(canon);
           },
           () => {}, // per-frame no-match; ignore
         );
-        if (cancelled) void teardown();
+        // If the overlay was cancelled/unmounted while start() was resolving,
+        // the camera is now live — release the CAPTURED instance (the ref may
+        // already be nulled by close(), which is why we don't go through it).
+        if (cancelled) {
+          instRef.current = null;
+          void stopInstance(inst);
+          return;
+        }
+        setNote("Point the camera at a barcode");
       } catch (e) {
-        if (!cancelled) {
-          const msg = e instanceof Error ? e.message : String(e);
-          setError(
-            /permission|denied|NotAllowed/i.test(msg)
-              ? "Camera permission was blocked. Allow it in Settings and try again."
-              : "Couldn't start the camera: " + msg,
-          );
+        if (cancelled) { void stopInstance(inst); return; }
+        const name = e instanceof Error ? e.name : "";
+        const msg = e instanceof Error ? e.message : String(e);
+        const blob = name + " " + msg;
+        if (/chunk|dynamically imported|import\(/i.test(blob)) {
+          setError("Couldn't load the scanner — check your connection and try again.");
+        } else if (/NotAllowed|Permission|denied/i.test(blob)) {
+          setError("Camera access is blocked. Allow the camera for this app in Settings, then try again.");
+        } else if (/NotFound|NotReadable|no camera/i.test(blob)) {
+          setError("No usable camera was found. You can type the barcode instead.");
+        } else {
+          setError("Couldn't start the camera: " + msg);
         }
       }
     })();
+
     return () => {
       cancelled = true;
-      void teardown();
+      document.body.style.overflow = prevOverflow;
+      const inst = instRef.current;
+      instRef.current = null;
+      void stopInstance(inst);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Never throws: stop() rejects if not scanning, clear() if not stopped — both swallowed.
-  async function teardown() {
+  function close() {
     const inst = instRef.current;
     instRef.current = null;
-    if (!inst) return;
-    try { await inst.stop(); } catch { /* not scanning */ }
-    try { inst.clear(); } catch { /* already cleared */ }
-  }
-
-  function close() {
-    void teardown();
+    void stopInstance(inst);
     onClose();
   }
 
-  return (
-    <div style={overlay}>
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div style={overlay} role="dialog" aria-modal="true" aria-label="Scan a barcode">
       <div style={bar}>
         <span style={{ fontSize: 14, fontWeight: 600 }}>{note}</span>
-        <button type="button" onClick={close} aria-label="Cancel scanning" style={xBtn}>✕</button>
+        <button ref={cancelBtnRef} type="button" onClick={close} aria-label="Cancel scanning" style={xBtn}>✕</button>
       </div>
       <div id="reader" style={reader} />
       {error && (
@@ -101,18 +131,19 @@ export default function BarcodeScanner({
         </div>
       )}
       <p style={privacy}>🔒 The camera stays on your phone — only the barcode number is used.</p>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 const overlay: CSSProperties = {
-  position: "fixed", inset: 0, zIndex: 100, background: "rgba(6,10,7,0.92)",
-  display: "flex", flexDirection: "column", alignItems: "center",
+  position: "fixed", inset: 0, zIndex: 200, background: "rgba(6,10,7,0.94)",
+  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start",
   padding: "max(env(safe-area-inset-top), 16px) 16px max(env(safe-area-inset-bottom), 16px)",
 };
 const bar: CSSProperties = {
   width: "100%", maxWidth: 420, display: "flex", alignItems: "center",
-  justifyContent: "space-between", color: "#fff", marginBottom: 14,
+  justifyContent: "space-between", color: "#fff", marginBottom: 14, gap: 12,
 };
 const xBtn: CSSProperties = {
   border: "1px solid rgba(255,255,255,.4)", background: "transparent", color: "#fff",
