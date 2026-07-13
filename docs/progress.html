@@ -179,7 +179,7 @@ const PHASES=[
 
  {id:"phaseCD", title:"Phase C/D · Camera scanning", status:"active",
   desc:"One camera scanner, two buttons: on Log, scan → identify the item (or start a new one); on Prices, scan → open that item's price story. Stops on the first read.",
-  note:"✅ Feasibility spike PASSED on the owner's iPhone (real EAN-13 read, 2026-07-13). Owner said build it (C11). In design — spec written, break-it passes next.",
+  note:"✅ Built, double-break-reviewed, and LIVE. Live-verify on the installed iPhone app caught + fixed one layout regression (iOS safe-area — content drew under the status bar / home indicator); owner confirmed the fix. Final 📷 scan sign-off (Log + Prices) pending.",
   steps:[
     {n:"Feasibility spike ✓", s:"done"},
     {n:"Design approved (C11)", s:"done"},
@@ -192,6 +192,10 @@ const PHASES=[
     {n:"Live verify (iPhone)", s:"active"}
   ],
   breaks:[
+    {stage:"📱 Live verify — installed iPhone app", verdict:"1 layout regression caught + fixed", items:[
+      "Installed-app only: the full-screen-scanner change (viewport-fit=cover) let the app draw under the iOS status bar + home indicator — the theme toggle collided with the clock/battery and the tab-bar icons were squished. Safari was unaffected, which is why only the installed-app check caught it.",
+      "Fixed by padding the app’s top/bottom chrome with iOS safe-area insets (those insets are 0 in Safari, so the browser layout is unchanged). Owner confirmed the installed app now looks right.",
+      "Also confirmed the earlier blank-screen was a stale cached version — cleared by reinstalling; the network-first service worker prevents it recurring."]},
     {stage:"🛡️ Break the BUILD ×2 (two independent skeptics)", verdict:"2 blockers + UX hardening — fixed", items:[
       "Both passes caught it: scanning a NEW product on Log silently dropped the barcode (so ‘scan → next time it’s recognised’ never got set up) — fixed.",
       "Both passes caught it: the camera could stay on if you cancelled while it was starting up — fixed (no lingering light).",
