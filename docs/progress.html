@@ -209,6 +209,25 @@ const PHASES=[
       "Major: a scanned barcode could silently override a name you edited (mis-filing) — editing the name now clears the scanned barcode.",
       "Major: two bundling/camera pitfalls fixed before coding (the scanner library staying out of the main app; the camera light not lingering / ‘camera in use’ on re-open).",
       "Minor: locked scanning to real product barcodes only (so a shelf-edge label can’t be mistaken for a product); notch-safe full-screen overlay; corrected an ‘offline’ note."]}
+  ]},
+
+ {id:"editPopup", title:"Purchase edit popup", status:"active",
+  desc:"On Month, tap a purchase to edit or delete it in a clean floating popup — instead of the row expanding inline and shoving the list around.",
+  note:"Design approved by the owner. Spec written and attacked (break-spec: 14 findings, all folded in). Planning next → build → two build-breaks → your live verify.",
+  steps:[
+    {n:"Design approved", s:"done"},
+    {n:"Spec + break-spec", s:"done"},
+    {n:"Plan (TDD)", s:"active"},
+    {n:"Break the plan", s:"queued"},
+    {n:"Build", s:"queued"},
+    {n:"Break the build ×2", s:"queued"},
+    {n:"Live verify (iPhone)", s:"queued"}
+  ],
+  breaks:[
+    {stage:"🛡️ Break the SPEC", verdict:"sound after fixes · 14 findings folded in", items:[
+      "Two blockers caught before any code: the popup would have let the theme toggle + bottom bar show through and stay tappable behind it; and the ‘swipe-back / Esc to close’ idea doesn’t actually work on the iPhone — both fixed in the design.",
+      "Protects your edits: tapping outside to dismiss the keyboard won’t wipe your changes — an outside tap only closes when you’ve changed nothing; otherwise you use the ✕.",
+      "Mobile hardening folded in: the top fields stay reachable when the keyboard is open, the popup respects the iPhone safe areas, and it can’t leave the page stuck un-scrollable."]}
   ]}
 ];
 
