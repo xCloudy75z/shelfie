@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { filsFromAed, formatAed } from "@/lib/money";
 import PurchaseEditModal from "@/app/components/PurchaseEditModal";
@@ -36,6 +36,7 @@ export default function EditablePurchases({
 }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   if (rows.length === 0) {
     return (
@@ -52,6 +53,8 @@ export default function EditablePurchases({
   return (
     <>
       <div
+        ref={listRef}
+        tabIndex={-1}
         style={{
           // Show ~4 purchases; the rest scroll inside the box so a big import
           // (a whole receipt) never makes the Month page endlessly long.
@@ -59,6 +62,7 @@ export default function EditablePurchases({
           overflowY: "auto",
           paddingRight: 4,
           WebkitOverflowScrolling: "touch",
+          outline: "none",
         }}
       >
         {rows.map((row) => (
@@ -70,6 +74,7 @@ export default function EditablePurchases({
         <PurchaseEditModal
           key={openId!}
           row={openRow}
+          fallbackFocusRef={listRef}
           onClose={() => setOpenId(null)}
           onDone={() => {
             setOpenId(null);

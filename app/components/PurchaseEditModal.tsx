@@ -6,6 +6,7 @@ import {
   useState,
   useTransition,
   type CSSProperties,
+  type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
 import { updatePurchase, deletePurchase } from "@/app/actions/purchases";
@@ -26,10 +27,13 @@ export default function PurchaseEditModal({
   row,
   onClose,
   onDone,
+  fallbackFocusRef,
 }: {
   row: EditablePurchaseRow;
   onClose: () => void;
   onDone: () => void;
+  /** Focused on close if the originating row is gone (e.g. after a delete). */
+  fallbackFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const [price, setPrice] = useState(row.priceAed);
   const [qty, setQty] = useState(String(row.quantity));
@@ -41,18 +45,14 @@ export default function PurchaseEditModal({
   const [onOffer, setOnOffer] = useState(row.onOffer);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const downOnBackdrop = useRef(false);
-  // Mirror `pending` into a ref so the once-bound Escape listener reads the
-  // CURRENT value (a stale `pending=false` closure would let Escape close the
-  // modal mid-save/delete).
-  const pendingRef = useRef(pending);
-  pendingRef.current = pending;
 
-  // Values the modal opened with — for the pristine close-guard.
+  // Values the modal opened with — for the "did anything change?" guard.
   const initial = useRef<EditableFields>({
     price: row.priceAed,
     qty: String(row.quantity),
@@ -62,19 +62,34 @@ export default function PurchaseEditModal({
   });
   const dirty = isPurchaseDirty(initial.current, { price, qty, store, date, onOffer });
 
-  const previewFils = filsFromAed(price);
+  // Mirror the latest pending/dirty into refs so the once-bound Escape listener
+  // reads CURRENT values (a stale closure would misbehave mid-request).
+  const pendingRef = useRef(pending);
+  const dirtyRef = useRef(dirty);
+  useEffect(() => {
+    pendingRef.current = pending;
+    dirtyRef.current = dirty;
+  });
 
-  // Keyboard-aware max height: track the visual viewport so the card stays
-  // within the space above the iOS keyboard (top fields reachable, footer
-  // visible). Falls back to 100dvh when visualViewport is unavailable.
-  const [vh, setVh] = useState<number | null>(null);
+  const priceValid = parsePriceFils(price) !== null;
+
+  // Track the VISUAL viewport (position + size) so the modal lives in the area
+  // actually visible above the iOS keyboard — both the top fields AND the Save
+  // footer stay reachable. Sizing the card alone isn't enough: a position:fixed
+  // backdrop covers the full LAYOUT viewport, so the card would center behind
+  // the keyboard. We pin the backdrop box to the visual viewport instead.
+  const [vp, setVp] = useState<{ top: number; height: number } | null>(null);
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setVh(vv.height);
+    const update = () => setVp({ top: vv.offsetTop, height: vv.height });
     update();
     vv.addEventListener("resize", update);
-    return () => vv.removeEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
   }, []);
 
   // Scroll-lock + focus + Escape + background inert. Restore everything in the
@@ -85,16 +100,16 @@ export default function PurchaseEditModal({
     document.body.style.overflow = "hidden";
     const shell = document.querySelector(".app-shell");
     // Capture the element that opened the modal (the row button) BEFORE moving
-    // focus, so we can restore it on close. May be <body> on iOS touch; the
-    // isConnected guard handles the after-delete case where the row is gone.
+    // focus, so we can restore it on close.
     const trigger = document.activeElement as HTMLElement | null;
     shell?.setAttribute("inert", ""); // traps focus + blocks taps on toggle/tab bar/list behind the backdrop
     closeBtnRef.current?.focus();
 
     const onKey = (e: KeyboardEvent) => {
-      // Escape = always close (like the ✕), but inert while a save/delete is
-      // pending — read pendingRef, not the stale closure value.
-      if (e.key === "Escape" && !pendingRef.current) onClose();
+      // Escape = same as ✕ (attempt close), inert while a save/delete is pending.
+      if (e.key !== "Escape" || pendingRef.current) return;
+      if (dirtyRef.current) setConfirmDiscard(true);
+      else onClose();
     };
     document.addEventListener("keydown", onKey);
 
@@ -102,15 +117,22 @@ export default function PurchaseEditModal({
       document.body.style.overflow = prevOverflow;
       shell?.removeAttribute("inert"); // remove inert BEFORE restoring focus
       document.removeEventListener("keydown", onKey);
+      // Restore focus: the originating row if it still exists (survives an edit),
+      // else the list container (row gone after a delete/month-move).
       if (trigger && trigger.isConnected) trigger.focus();
+      else fallbackFocusRef?.current?.focus();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // fromBackdrop=true is the pristine-guarded path; ✕/Escape pass false (always close).
-  function requestClose(fromBackdrop: boolean) {
-    if (pending) return; // close paths inert while a save/delete is in flight
-    if (fromBackdrop && dirty) return; // protect unsaved edits from an accidental outside tap
+  // Attempt to close: blocked while pending; if there are unsaved edits, ask
+  // before discarding (so an accidental outside tap can't wipe them silently).
+  function attemptClose() {
+    if (pending) return;
+    if (dirty) {
+      setConfirmDiscard(true);
+      return;
+    }
     onClose();
   }
 
@@ -122,7 +144,7 @@ export default function PurchaseEditModal({
     if (e.target !== e.currentTarget) return; // bubbled from card contents
     if (!downOnBackdrop.current) return; // drag started inside a field
     downOnBackdrop.current = false;
-    requestClose(true);
+    attemptClose();
   }
 
   function save() {
@@ -168,11 +190,14 @@ export default function PurchaseEditModal({
 
   if (typeof document === "undefined") return null;
 
-  const cardMaxHeight = vh ? `${vh - 32}px` : "calc(100dvh - 32px)";
+  const cardMaxHeight = vp ? `${vp.height - 32}px` : "calc(100dvh - 32px)";
+  const geometry: CSSProperties = vp
+    ? { position: "fixed", top: vp.top, left: 0, right: 0, height: vp.height }
+    : { position: "fixed", inset: 0 };
 
   return createPortal(
     <div
-      style={backdrop}
+      style={{ ...backdrop, ...geometry }}
       onPointerDown={onBackdropPointerDown}
       onClick={onBackdropClick}
     >
@@ -194,7 +219,7 @@ export default function PurchaseEditModal({
           <button
             ref={closeBtnRef}
             type="button"
-            onClick={() => requestClose(false)}
+            onClick={attemptClose}
             aria-label="Close"
             style={xBtn}
           >
@@ -203,7 +228,7 @@ export default function PurchaseEditModal({
         </div>
 
         {/* Body (scrolls) */}
-        <div style={body}>
+        <div style={bodyStyle}>
           <div style={s.row}>
             <div style={s.rowChild}>
               <label style={s.label}>Price (AED)</label>
@@ -252,7 +277,7 @@ export default function PurchaseEditModal({
         {/* Footer (fixed, always visible) */}
         <div style={footer}>
           {confirmDelete ? (
-            <div style={{ width: "100%" }}>
+            <div style={dangerBox}>
               <p style={{ margin: "0 0 12px", fontSize: 14, color: "var(--ink)" }}>Delete this purchase?</p>
               <div style={s.row}>
                 <button type="button" disabled={pending} onClick={remove} style={{ flex: 1, border: 0, borderRadius: 14, padding: 13, fontSize: 15, fontWeight: 700, background: "var(--red)", color: "#fff", cursor: "pointer", opacity: pending ? 0.6 : 1 }}>
@@ -263,10 +288,22 @@ export default function PurchaseEditModal({
                 </button>
               </div>
             </div>
+          ) : confirmDiscard ? (
+            <div style={{ width: "100%" }}>
+              <p style={{ margin: "0 0 12px", fontSize: 14, color: "var(--ink)" }}>Discard your changes?</p>
+              <div style={s.row}>
+                <button type="button" onClick={() => setConfirmDiscard(false)} style={{ flex: 1, border: 0, borderRadius: 14, padding: 13, fontSize: 15, fontWeight: 700, background: "var(--green)", color: "#fff", cursor: "pointer" }}>
+                  Keep editing
+                </button>
+                <button type="button" onClick={onClose} style={{ flex: 1, border: "1px solid var(--line)", borderRadius: 14, padding: 13, fontSize: 15, fontWeight: 700, background: "var(--card)", color: "var(--red)", cursor: "pointer" }}>
+                  Discard
+                </button>
+              </div>
+            </div>
           ) : (
             <div style={{ ...s.row, width: "100%" }}>
               <button type="button" disabled={pending} onClick={save} style={{ flex: 1, border: 0, borderRadius: 14, padding: 13, fontSize: 15, fontWeight: 700, background: "var(--green)", color: "#fff", cursor: "pointer", opacity: pending ? 0.6 : 1 }}>
-                {pending ? "Saving…" : `Save · ${formatAed(previewFils)}`}
+                {pending ? "Saving…" : priceValid ? `Save · ${formatAed(filsFromAed(price))}` : "Save"}
               </button>
               <button type="button" disabled={pending} onClick={() => setConfirmDelete(true)} style={{ flex: "0 0 auto", border: "1px solid var(--line)", borderRadius: 14, padding: "13px 16px", fontSize: 15, fontWeight: 700, background: "var(--card)", color: "var(--red)", cursor: "pointer", opacity: pending ? 0.6 : 1 }}>
                 Delete
@@ -281,13 +318,11 @@ export default function PurchaseEditModal({
 }
 
 const backdrop: CSSProperties = {
-  position: "fixed",
-  inset: 0,
   zIndex: 200, // above tab bar (50) + theme toggle (100); must occlude both
   background: "rgba(6,10,7,0.55)",
   display: "flex",
   justifyContent: "center",
-  alignItems: "flex-start", // + card margin:auto = centered when it fits, top-reachable + scrollable when tall
+  alignItems: "center",
   overflowY: "auto",
   WebkitOverflowScrolling: "touch",
   padding: "max(env(safe-area-inset-top), 16px) 16px max(env(safe-area-inset-bottom), 16px)",
@@ -301,7 +336,9 @@ const card: CSSProperties = {
   background: "var(--card)",
   border: "1px solid var(--line)",
   borderRadius: "var(--radius)",
-  boxShadow: "var(--shadow)",
+  // second layer = a faint light ring so the card separates from the dim in
+  // dark mode (where --shadow is near-invisible against the near-black page).
+  boxShadow: "var(--shadow), 0 0 0 1px rgba(255,255,255,0.06)",
   overflow: "hidden",
 };
 const header: CSSProperties = {
@@ -313,7 +350,7 @@ const header: CSSProperties = {
   padding: "18px 18px 12px",
   borderBottom: "1px solid var(--line)",
 };
-const body: CSSProperties = {
+const bodyStyle: CSSProperties = {
   flex: "1 1 auto",
   overflowY: "auto",
   overscrollBehavior: "contain",
@@ -326,14 +363,21 @@ const footer: CSSProperties = {
   borderTop: "1px solid var(--line)",
   background: "var(--card)",
 };
+const dangerBox: CSSProperties = {
+  width: "100%",
+  padding: 14,
+  borderRadius: 14,
+  background: "var(--red-soft)",
+  border: "1px solid var(--line)",
+};
 const xBtn: CSSProperties = {
   flex: "none",
   border: "1px solid var(--line)",
   background: "var(--card)",
   color: "var(--ink)",
-  width: 38,
-  height: 38,
-  borderRadius: 10,
+  width: 44,
+  height: 44,
+  borderRadius: 12,
   fontSize: 16,
   cursor: "pointer",
 };
