@@ -156,14 +156,20 @@ const PHASES=[
   steps:[
     {n:"Design approved", s:"done"},
     {n:"Spec + published", s:"done"},
-    {n:"Break the spec", s:"active"},
-    {n:"Plan (TDD)", s:"todo"},
+    {n:"Break the spec", s:"done"},
+    {n:"Plan (TDD)", s:"active"},
     {n:"Break the plan", s:"todo"},
     {n:"Build", s:"todo"},
     {n:"Break the build ×2", s:"todo"},
     {n:"Live verify (iPhone)", s:"todo"}
   ],
-  breaks:[]},
+  breaks:[
+    {stage:"🛡️ Break the SPEC", verdict:"forward merge sound · 2 Major undo fixes", items:[
+      "Major: if the freed item name got re-used before you hit Undo, undo would crash — now it folds back into the same-named item instead.",
+      "Major: if you'd deleted the category before undo, undo would crash — now it restores the item as Uncategorized.",
+      "Guardrails: barcodes are moved BEFORE the old item is deleted (a wrong order would silently lose them); both items re-checked mid-merge; Undo disables after one tap.",
+      "Confirmed safe: no data loss in the merge, the Month totals + discounts are unaffected, and price history stays same-unit."]}
+  ]},
 
  {id:"phaseC", title:"Phase C · Camera scanning", status:"queued",
   desc:"Scan a barcode with the phone camera instead of typing. Feasibility-gated: prove the camera works in your installed iPhone app before adding the scanner library.",
