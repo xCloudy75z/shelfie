@@ -172,6 +172,11 @@ export default function PurchaseEditModal({
 
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const downOnBackdrop = useRef(false);
+  // Mirror `pending` into a ref so the once-bound Escape listener reads the
+  // CURRENT value (break-plan finding 2 — a stale `pending=false` closure would
+  // let Escape close the modal mid-save/delete).
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
 
   // Values the modal opened with — for the pristine close-guard.
   const initial = useRef<EditableFields>({
@@ -205,18 +210,28 @@ export default function PurchaseEditModal({
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const shell = document.querySelector(".app-shell");
+    // Capture the element that opened the modal (the row button) BEFORE we move
+    // focus, so we can restore focus on close (spec §3.5). May be <body> on iOS
+    // touch (buttons don't always focus on tap) — the isConnected guard handles
+    // the after-delete case where the row is gone.
+    const trigger = document.activeElement as HTMLElement | null;
     shell?.setAttribute("inert", ""); // traps focus + blocks taps on toggle/tab bar/list behind the backdrop
     closeBtnRef.current?.focus();
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") requestClose(false);
+      // Escape = always close (like ✕), but inert while a save/delete is pending
+      // — read pendingRef (not the stale closure value).
+      if (e.key === "Escape" && !pendingRef.current) onClose();
     };
     document.addEventListener("keydown", onKey);
 
     return () => {
       document.body.style.overflow = prevOverflow;
-      shell?.removeAttribute("inert");
+      shell?.removeAttribute("inert"); // remove inert BEFORE restoring focus
       document.removeEventListener("keydown", onKey);
+      // Restore focus to the trigger if it still exists (row survives an edit;
+      // it's gone after a delete → fall back to leaving focus, which lands on body).
+      if (trigger && trigger.isConnected) trigger.focus();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -401,7 +416,7 @@ const backdrop: CSSProperties = {
   background: "rgba(6,10,7,0.55)",
   display: "flex",
   justifyContent: "center",
-  alignItems: "center",
+  alignItems: "flex-start", // + card margin:auto = centered when it fits, top-reachable + scrollable when tall (spec §3.4)
   overflowY: "auto",
   WebkitOverflowScrolling: "touch",
   padding: "max(env(safe-area-inset-top), 16px) 16px max(env(safe-area-inset-bottom), 16px)",
@@ -666,7 +681,7 @@ Run: `cmd /c "vercel ls shelfie"` — expect a fresh Building/Ready row for the 
 
 ## Self-review (author)
 
-- **Spec coverage:** §3.1 list (Task 3) · §3.2 portal + key (Task 3) · §3.3 close paths/pending-inert/backdrop hit-test/scroll-lock (Task 2) · §3.4 z-200/dvh+visualViewport/max-width/overscroll/safe-area (Task 2) · §3.5 focus (closeBtn focus + `inert` trap) / aria-haspopup (Tasks 2–3) · §4 openRow guard + store-coercion note (Tasks 2–3) · §5 no new pure logic except `isPurchaseDirty` (Task 1). ✅ all covered.
+- **Spec coverage:** §3.1 list (Task 3) · §3.2 portal + key (Task 3) · §3.3 close paths/pending-inert (incl. Escape via `pendingRef`)/backdrop hit-test/scroll-lock (Task 2) · §3.4 z-200/dvh+visualViewport/max-width/overscroll/safe-area/flex-start (Task 2) · §3.5 focus **open (closeBtn) AND restore-on-close (captured trigger + isConnected fallback)** + `inert` trap + aria-haspopup (Tasks 2–3) · §4 openRow guard + store-coercion note (Tasks 2–3) · §5 no new pure logic except `isPurchaseDirty` (Task 1). ✅ all covered (focus-restore folded in per break-plan finding 1).
 - **Placeholder scan:** none — every step has full code.
 - **Type consistency:** `EditableFields` (lib) matches the object passed to `isPurchaseDirty`; `EditablePurchaseRow` shape identical in both files; `updatePurchase`/`deletePurchase` signatures unchanged from the current file.
 - **Note for the builder:** the `inert` attribute (focus trap) is supported on the owner's iOS 18; do not add a JS focus-trap library. Keep `updatePurchase`/`deletePurchase` calls identical — this task must not change server behavior.
