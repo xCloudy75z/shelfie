@@ -150,10 +150,20 @@ const PHASES=[
       "3 minor edges verified acceptable; the discount math, safe deletes, and category tools all confirmed correct on the real code."]}
   ]},
 
- {id:"phaseB", title:"Phase B · Merge tool", status:"queued",
-  desc:"Fold duplicate items into one (keep the kept name, union their barcodes, move all purchases over) with a confirm + one-tap undo. Lives right on the Prices item view.",
-  note:"Queued — starts after Phase A is signed off.",
-  steps:[], breaks:[]},
+ {id:"phaseB", title:"Phase B · Merge tool", status:"active",
+  desc:"Fold two items into one on the Prices view — you choose which name to keep; the other item's purchases &amp; barcodes move over, then it's removed. One-tap undo.",
+  note:"In design — spec written, break-it passes next. Now with TWO break-the-build passes before your live check.",
+  steps:[
+    {n:"Design approved", s:"done"},
+    {n:"Spec + published", s:"done"},
+    {n:"Break the spec", s:"active"},
+    {n:"Plan (TDD)", s:"todo"},
+    {n:"Break the plan", s:"todo"},
+    {n:"Build", s:"todo"},
+    {n:"Break the build ×2", s:"todo"},
+    {n:"Live verify (iPhone)", s:"todo"}
+  ],
+  breaks:[]},
 
  {id:"phaseC", title:"Phase C · Camera scanning", status:"queued",
   desc:"Scan a barcode with the phone camera instead of typing. Feasibility-gated: prove the camera works in your installed iPhone app before adding the scanner library.",
