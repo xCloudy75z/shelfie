@@ -211,9 +211,9 @@ const PHASES=[
       "Minor: locked scanning to real product barcodes only (so a shelf-edge label can’t be mistaken for a product); notch-safe full-screen overlay; corrected an ‘offline’ note."]}
   ]},
 
- {id:"editPopup", title:"Purchase edit popup", status:"active",
+ {id:"editPopup", title:"Purchase edit popup", status:"done",
   desc:"On Month, tap a purchase to edit or delete it in a clean floating popup — instead of the row expanding inline and shoving the list around.",
-  note:"Built, TDD'd (129 tests), and attacked at every gate — break-spec (14 findings), break-plan (3), break-build ×2 + a confirm pass. LIVE on Vercel, awaiting the owner's live verify on iPhone (Safari + installed app).",
+  note:"✅ Shipped & verified on the owner's iPhone (Safari + installed app). Strict TDD (129 tests) through every gate — break-spec (14 findings), break-plan (3), break-build ×2 + a confirm pass — plus a live-verify round that turned the discard confirmation into a clear centered pop-up.",
   steps:[
     {n:"Design approved", s:"done"},
     {n:"Spec + break-spec", s:"done"},
@@ -221,9 +221,12 @@ const PHASES=[
     {n:"Break the plan", s:"done"},
     {n:"Build · 129 tests", s:"done"},
     {n:"Break the build ×2", s:"done"},
-    {n:"Live verify (iPhone)", s:"active"}
+    {n:"Live verify (iPhone)", s:"done"}
   ],
   breaks:[
+    {stage:"📱 Live verify — owner's iPhone", verdict:"shipped · 1 refinement", items:[
+      "Owner verified the popup edit + delete, the keyboard case, and the close behaviour on his iPhone — ‘above perfect’.",
+      "One refinement: the ‘Discard your changes?’ confirmation first showed as a subtle line in the footer (easy to miss, and hidden behind the keyboard). Now it’s a proper centered pop-up and the keyboard drops away so it’s always clear. Re-verified — perfect."]},
     {stage:"🛡️ Break the BUILD ×2 (two independent skeptics)", verdict:"1 blocker + 1 major caught by pass 2 — fixed", items:[
       "Pass 1 (correctness) said SHIP — the popup matched the old editor exactly, no data bugs. Pass 2 (real-use on the phone) caught what it structurally couldn't: with the keyboard open, the Save button sat hidden behind the keyboard. The popup now tracks the visible area so Save + every field stay reachable.",
       "Pass 2 also caught that after editing, tapping outside did nothing (felt frozen) — now an outside tap on an edited form asks ‘Discard your changes?’ (Keep editing / Discard) instead of silently ignoring you.",
