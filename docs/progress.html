@@ -157,9 +157,9 @@ const PHASES=[
     {n:"Design approved", s:"done"},
     {n:"Spec + published", s:"done"},
     {n:"Break the spec", s:"done"},
-    {n:"Plan (TDD)", s:"active"},
-    {n:"Break the plan", s:"todo"},
-    {n:"Build", s:"todo"},
+    {n:"Plan (TDD)", s:"done"},
+    {n:"Break the plan", s:"done"},
+    {n:"Build", s:"active"},
     {n:"Break the build ×2", s:"todo"},
     {n:"Live verify (iPhone)", s:"todo"}
   ],
@@ -168,7 +168,9 @@ const PHASES=[
       "Major: if the freed item name got re-used before you hit Undo, undo would crash — now it folds back into the same-named item instead.",
       "Major: if you'd deleted the category before undo, undo would crash — now it restores the item as Uncategorized.",
       "Guardrails: barcodes are moved BEFORE the old item is deleted (a wrong order would silently lose them); both items re-checked mid-merge; Undo disables after one tap.",
-      "Confirmed safe: no data loss in the merge, the Month totals + discounts are unaffected, and price history stays same-unit."]}
+      "Confirmed safe: no data loss in the merge, the Month totals + discounts are unaffected, and price history stays same-unit."]},
+    {stage:"🛡️ Break the PLAN", verdict:"passed clean — correct to execute", items:[
+      "Independent review verified every step against the real code (the load-bearing delete order, undo tolerances, page wiring, types) — no changes needed. Only cosmetic notes."]}
   ]},
 
  {id:"phaseC", title:"Phase C · Camera scanning", status:"queued",
