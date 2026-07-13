@@ -38,6 +38,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#1f9d57",
+  viewportFit: "cover",
 };
 
 // No-flash theme init: set data-theme on <html> before first paint by reading
